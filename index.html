@@ -486,21 +486,10 @@ function dFC(c,p){
   if(d===0||Math.abs(d)<0.1)return'<div class="sub dz">0</div>';
   return`<div class="sub ${d>0?'dp':'dn'}">${d>0?'+':'-'}${Math.abs(d)}</div>`;
 }
-function elevHtml(v, refV){
+function elevHtml(v){
   var n=parseInt(v)||0;
-  var ref=parseInt(refV)||0;
-  var elevDisp = n===0 ? '<div class="elev dz">0m</div>' : (n>0 ? `<div class="elev dp">▲ +${n}m</div>` : `<div class="elev dn">▼ ${Math.abs(n)}m</div>`);
-  var deltaStr = '';
-  if(refV !== null && refV !== undefined){
-    var d = n - ref;
-    if(Math.abs(d) >= 1){
-      var sign = d>0?'+':'-';
-      deltaStr = `<div class="sub ${d>0?'dp':'dn'}">${sign}${Math.abs(d)}m</div>`;
-    }else{
-      deltaStr = '<div class="sub dz">0m</div>';
-    }
-  }
-  return elevDisp + deltaStr;
+  if(n===0)return'<div class="elev dz">0m</div>';
+  return n>0?`<div class="elev dp">▲ +${n}m</div>`:`<div class="elev dn">▼ ${Math.abs(n)}m</div>`;
 }
 function cellPlain(v,ev){
   return`<td><div class="metric"><div class="main">${v}</div>${ev!==undefined?elevHtml(ev):''}</div></td>`;
