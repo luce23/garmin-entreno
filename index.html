@@ -488,7 +488,7 @@ function dFC(c,p){
 }
 function elevHtml(v){
   var n=parseInt(v)||0;
-  if(n===0)return'<div class="elev dz">0m</div>';
+  if(n===0)return'';
   return n>0?`<div class="elev dp">▲ +${n}m</div>`:`<div class="elev dn">▼ ${Math.abs(n)}m</div>`;
 }
 function cellPlain(v,ev){
@@ -942,7 +942,7 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
          +'<td><div class="metric"><div class="main">'+toRitmo(syn.speed)+'</div>'+dRitmoH+'</div></td>'
          +'<td><div class="metric"><div class="main">'+syn.fc_med+'</div>'+dFCmH+'</div></td>'
          +'<td><div class="metric"><div class="main">'+fcDisp+'</div>'+dFCxH+'</div></td>'
-         +zonaCellHtml(syn.zonas_lap)+'</tr>';
+          +zonaCellHtml(zonaSyn.zonas_lap)+'</tr>';
 
       // Laps individuales
       g.laps.forEach(function(s){
