@@ -428,7 +428,7 @@ function zonaRange(nombre){return _zonaRangos[nombre]||'';}
 
 function dKmh(c,p){
   const d=parseFloat(((c>=0.3?c*3.6:0)-(p>=0.3?p*3.6:0)).toFixed(1));
-  if(d===0||Math.abs(d)<0.1)return'<div class="sub dz">0</div>';
+  if(d===0||Math.abs(d)<0.1)return'';
   return`<div class="sub ${d>0?'dn':'dp'}">${d>0?'+':'-'}${Math.abs(d)}</div>`;
 }
 function dKmhRaw(c,p){
@@ -471,19 +471,19 @@ function dDescansoFC(c,p){
   return'<div class="sub dg" style="opacity:0.2">'+(d>0?'+':'-')+Math.abs(d)+'</div>';
 }
 function _dCadRaw(c,p){
-  var d=c-p; if(d===0||Math.abs(d)<0.1)return'<div class="sub dz">0</div>';
+  var d=c-p; if(d===0||Math.abs(d)<0.1)return'';
   return'<div class="sub '+(d>0?'dn':'dp')+'">'+(d>0?'+':'-')+Math.abs(d)+'</div>';
 }
 function dRitmo(c,p){
   const diff=Math.round(ritmoSecs(c)-ritmoSecs(p));
-  if(diff===0||Math.abs(diff)<0.9)return'<div class="sub dz">0:00</div>';
+  if(diff===0||Math.abs(diff)<0.9)return'';
   const b=diff<0,cls=b?'dn':'dp',sign=b?'-':'+';
   const a=Math.abs(diff),m=Math.floor(a/60),s=a%60;
   return`<div class="sub ${cls}">${sign}${m>0?m+':'+(s<10?'0':'')+s:'0:'+(s<10?'0':'')+s}</div>`;
 }
 function dFC(c,p){
   const d=c-p;
-  if(d===0||Math.abs(d)<0.1)return'<div class="sub dz">0</div>';
+  if(d===0||Math.abs(d)<0.1)return'';
   return`<div class="sub ${d>0?'dp':'dn'}">${d>0?'+':'-'}${Math.abs(d)}</div>`;
 }
 function elevHtml(v){
@@ -913,9 +913,10 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
         });
         return;
       }
-      // interval group
-      var syn=_synthLap(g.activeLaps,'Intervalo '+g.num);
-      var grpFCx=g.activeLaps.length?Math.max.apply(null,g.activeLaps.map(function(l){return l.fc_max;})):0;
+       // interval group
+       var syn=_synthLap(g.activeLaps,'Intervalo '+g.num);
+       var zonaSyn=_synthLap(g.laps,'');
+       var grpFCx=g.activeLaps.length?Math.max.apply(null,g.activeLaps.map(function(l){return l.fc_max;})):0;
       var isPillGroup=(grpFCx===maxFCxVal);
       var grpId=_actId+'g'+_rowIdx;
       var durStr=syn.dur_secs?secsToStr(syn.dur_secs):'';
