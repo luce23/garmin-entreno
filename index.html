@@ -1740,7 +1740,7 @@ function _captureEl(callback){
   document.body.appendChild(wrapper);
 
   // iOS Safari has a max canvas size of ~16MP — use lower scale
-  const scale=isIOS()?1.5:10;
+  const scale=isIOS()?1.5:8;
 
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const w=Math.max(wrapper.scrollWidth,clone.scrollWidth)+64;
@@ -1797,6 +1797,7 @@ function copyImg(){
     }).then(canvas=>{
       document.body.removeChild(wrapper);
 
+      // Intentar copiar al portapapeles (funciona en PC/Mac)
       canvas.toBlob(blob=>{
         if(!blob){openIOSave(canvas);return;}
         navigator.clipboard.write([new ClipboardItem({'image/png':blob})])
