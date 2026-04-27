@@ -268,13 +268,21 @@ td:first-child:hover .hide-btn{color:#454a55}
   .editor{border-bottom:none;border-right:none;flex:1;overflow-y:auto;padding:16px 20px}
   .editor-top{gap:8px}
   .action-row-main{grid-template-columns:1fr 1fr}
-  .json-area{height:clamp(180px,20vh,280px)}
-}
-
-@media(min-width:1200px){
-  .app{grid-template-columns:420px 1fr}
-}
-</style>
+   .json-area{height:clamp(180px,20vh,280px)}
+ }
+ @media(min-width:1200px){
+   .app{grid-template-columns:420px 1fr}
+ }
+ .hr-zones-section{margin:10px 0;padding:10px;border:1px solid #3a3f45;border-radius:6px;background:#141826}
+ .hr-zones-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+ .hr-zones-title{font-size:13px;font-weight:600;color:#9aa0a6}
+  .btn-hr-zones{background:#141826;border-color:#2a3450;color:#9aa0a6;font-size:12px;padding:0 14px;min-height:38px;display:inline-flex;align-items:center;gap:7px;border-radius:9px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s,color .15s,border-color .15s}
+ .hr-zones-content{margin-top:8px}
+ #hr-zones-input{width:100%;font-family:monospace;font-size:13px;padding:8px;border:1px solid #2a2b32;border-radius:4px;background:#0f1014;color:#eaeaea}
+  .btn-apply{background:#1e4d1e;border-color:#3a8a3a;color:#7eff7e;font-size:clamp(10px,2.5vw,12px);padding:0 12px;min-height:28px;margin-top:6px}
+  .hr-zones-content select{width:100%;margin-top:4px;padding:4px;border:1px solid #2a2b32;border-radius:4px;background:#0f1014;color:#eaeaea;font-size:13px;}
+  .hr-zones-content input[type=number]{width:100%;padding:4px;border:1px solid #2a2b32;border-radius:4px;background:#0f1014;color:#eaeaea;font-size:13px;margin-top:4px;}
+  </style>
 </head>
 <body>
 <div class="app">
@@ -304,17 +312,21 @@ td:first-child:hover .hide-btn{color:#454a55}
   <div class="json-wrap">
     <textarea class="json-area" id="json-input" spellcheck="false" autocorrect="off" autocapitalize="off"
       placeholder="Carga el .fit desde el botón Garmin"></textarea>
-  </div>
-  <div class="hint">Usa el botón Garmin para cargar archivos</div>
+</div>
+
+   <div class="hint">Usa el botón Garmin para cargar archivos</div>
   <div class="error-msg" id="error-msg"></div>
 </div>
 
 <!-- ── GARMIN CONNECT ── -->
 <div class="prompt-section">
-  <a href="https://connect.garmin.com/app/activities" target="_blank" 
+  <a href="https://connect.garmin.com/app/activities" target="_blank"
      class="prompt-toggle" style="text-decoration:none">
     <span>🌐 Garmin Connect</span>
   </a>
+  <button class="btn btn-hr-zones" onclick="toggleHRZones()" style="margin-left:8px;">
+    <span>⚡ Zonas FC</span>
+  </button>
   <button class="prompt-toggle" onclick="togglePrompt()" style="margin-left:8px;display:none">
     <span class="prompt-toggle-arrow" id="toggle-arrow">▶</span>
     <span>Prompt</span>
@@ -322,6 +334,27 @@ td:first-child:hover .hide-btn{color:#454a55}
   <button class="btn btn-copy" onclick="copyPrompt()" style="min-height:38px;font-size:11px;padding:0 12px;display:none">Copiar</button>
 </div>
 <div class="prompt-body" id="prompt-body" style="display:none;">
+</div>
+<div class="hr-zones-content" id="hr-zones-content" style="display:none;">
+  <div>Método:</div>
+  <select id="hr-method" onchange="toggleHRMethod()">
+    <option value="lactate" selected>% Umbral de lactato (ppm)</option>
+    <option value="maxhr">% FC máxima (ppm)</option>
+    <option value="manual">Manual (min,max por zona)</option>
+  </select>
+  <div id="hr-lactate-input" style="margin-top:8px;">
+    <div>Umbral de lactato (ppm):</div>
+    <input type="number" id="hr-lactate-value" placeholder="ej. 160">
+  </div>
+  <div id="hr-maxhr-input" style="display:none;margin-top:8px;">
+    <div>FC máxima (ppm):</div>
+    <input type="number" id="hr-maxhr-value" placeholder="ej. 190">
+  </div>
+  <div id="hr-manual-input" style="display:none;margin-top:8px;">
+    <div>Ingrese 5 líneas: min,max (por zona Z1 a Z5). Ej: 104,120</div>
+    <textarea id="hr-zones-input" rows="5" placeholder="104,120&#10;122,141&#10;143,161&#10;163,181&#10;183,188"></textarea>
+  </div>
+    <div style="text-align:right; margin-top:8px;"><button class="btn btn-apply" onclick="applyHRZones()" style="min-height:38px; padding:0 14px;">Aplicar zonas</button></div>
 </div>
 
 </div><!-- .sidebar -->
@@ -1903,6 +1936,7 @@ function fitToGarminJson(fitData, filename) {
   var sessions = fitData.sessions || [];
   var laps     = fitData.laps     || [];
   var records  = fitData.records  || [];
+  window.fitRecords = records; // store for custom zone recalc
   var workouts = fitData.workouts || [];
   var zonesArr = fitData.zonesTarget || fitData.zones_target || [];
 
@@ -1933,22 +1967,41 @@ function fitToGarminJson(fitData, filename) {
                    : sport    === 'running'   ? 'running'
                    : 'running';
 
-  /* ── HR zone boundaries from zonesTarget (50/60/70/80/90% maxHR) ── */
-  var maxHR = zt.maxHeartRate || zt.max_heart_rate || session.maxHeartRate || session.max_heart_rate || 190;
-  var bounds = [0.50, 0.60, 0.70, 0.80, 0.90].map(function(p){ return Math.round(maxHR * p); });
+  /* ── HR zone boundaries ── */
+  var bounds;
+  var customZones = false;
+  var customZonesData = null;
+  if (window.customHRZones && window.customHRZones.length === 5) {
+    customZones = true;
+    customZonesData = window.customHRZones;
+  } else {
+    var maxHR = zt.maxHeartRate || zt.max_heart_rate || session.maxHeartRate || session.max_heart_rate || 190;
+    bounds = [0.50, 0.60, 0.70, 0.80, 0.90].map(function(p){ return Math.round(maxHR * p); });
+  }
 
   /* ── Compute HR zones from per-second records ── */
   var zoneSecs = [0,0,0,0,0];
   records.forEach(function(r) {
     var hr = r.heartRate || r.heart_rate || 0;
     if (!hr) return;
-    var z = 0;
-    for (var i = 4; i >= 0; i--) { if (hr >= bounds[i]) { z = i; break; } }
-    zoneSecs[z]++;
+    var z = -1;
+    if (customZones) {
+      for (var i = 0; i < 5; i++) {
+        if (hr >= customZonesData[i].min && hr <= customZonesData[i].max) {
+          z = i;
+          break;
+        }
+      }
+      if (z === -1) return; // hr not in any custom zone
+    } else {
+      for (var i = 4; i >= 0; i--) { if (hr >= bounds[i]) { z = i; break; } }
+    }
+    if (z >= 0) zoneSecs[z]++;
   });
 
   var hr_time_in_zones = zoneSecs.map(function(secs, i) {
-    return { zoneNumber: i+1, secsInZone: secs, zoneLowBoundary: bounds[i] };
+    var lowBound = customZones ? customZonesData[i].min : bounds[i];
+    return { zoneNumber: i+1, secsInZone: secs, zoneLowBoundary: lowBound };
   });
 
   /* ── Convert laps to raw Garmin API format ── */
@@ -2037,7 +2090,143 @@ function copyPrompt(){
     btn.textContent='No disponible';
   }
 }
-
+</script>
+<script>
+/* ── CUSTOM HR ZONES ── */
+window.customHRZones = null;
+function toggleHRZones() {
+  var content = document.getElementById('hr-zones-content');
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+  } else {
+    content.style.display = 'none';
+  }
+}
+function toggleHRMethod() {
+  var method = document.getElementById('hr-method').value;
+  document.getElementById('hr-manual-input').style.display = method === 'manual' ? 'block' : 'none';
+  document.getElementById('hr-lactate-input').style.display = method === 'lactate' ? 'block' : 'none';
+  document.getElementById('hr-maxhr-input').style.display = method === 'maxhr' ? 'block' : 'none';
+}
+function recomputeHRZonesFromRecords() {
+  if (!window.fitRecords || !window.customHRZones || window.customHRZones.length !== 5) return false;
+  var records = window.fitRecords;
+  var customZonesData = window.customHRZones;
+  var zoneSecs = [0,0,0,0,0];
+  records.forEach(function(r) {
+    var hr = r.heartRate || r.heart_rate || 0;
+    if (!hr) return;
+    for (var i = 0; i < 5; i++) {
+      if (hr >= customZonesData[i].min && hr <= customZonesData[i].max) {
+        zoneSecs[i]++;
+        break;
+      }
+    }
+  });
+  var hr_time_in_zones = zoneSecs.map(function(secs, i) {
+    return { zoneNumber: i+1, secsInZone: secs, zoneLowBoundary: customZonesData[i].min };
+  });
+  var jsonText = document.getElementById('json-input').value.trim();
+  if (jsonText) {
+    try {
+      var obj = JSON.parse(jsonText);
+      obj.hr_time_in_zones = hr_time_in_zones;
+      // Remove zonas_lap from laps to force recomputation
+      if (obj.laps && Array.isArray(obj.laps)) {
+        obj.laps.forEach(function(lap) { delete lap.zonas_lap; });
+      }
+      // Update zonas array for dynamic display
+      var zoneNames = ['Zona 1 · Calentamiento', 'Zona 2 · Suave', 'Zona 3 · Aeróbica', 'Zona 4 · Umbral', 'Zona 5 · Máximo'];
+      var zoneColors = ['#a0a0a0', '#4a90e2', '#27ae60', '#f39c12', '#e74c3c'];
+      obj.zonas = hr_time_in_zones.map(function(z, i) {
+        var min = customZonesData[i].min;
+        var max = customZonesData[i].max;
+        var rango = min + '-' + max + ' ppm';
+        // Update _zonaRangos for range display
+        _zonaRangos[zoneNames[i]] = rango;
+        return { nombre: zoneNames[i], secs: z.secsInZone, rango: rango, color: zoneColors[i] };
+      });
+      document.getElementById('json-input').value = JSON.stringify(obj, null, 2);
+      return true;
+    } catch(e) {}
+  }
+  return false;
+}
+function updateZoneRanges() {
+  if (!window.customHRZones) return;
+  var zoneNames = ['Zona 1 · Calentamiento', 'Zona 2 · Suave', 'Zona 3 · Aeróbica', 'Zona 4 · Umbral', 'Zona 5 · Máximo'];
+  window.customHRZones.forEach(function(z, i) {
+    var rango = z.min + '-' + z.max + ' ppm';
+    _zonaRangos[zoneNames[i]] = rango;
+  });
+}
+function applyHRZones() {
+  var method = document.getElementById('hr-method').value;
+  if (method === 'manual') {
+    var input = document.getElementById('hr-zones-input').value.trim();
+    if (!input) {
+      window.customHRZones = null;
+      // No alert
+      return;
+    }
+    var lines = input.split('\n');
+    if (lines.length !== 5) {
+      alert('Debe ingresar exactamente 5 líneas (una por zona).');
+      return;
+    }
+    var zones = [];
+    for (var i = 0; i < 5; i++) {
+      var parts = lines[i].split(',').map(function(p){ return parseFloat(p.trim()); });
+      if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1]) || parts[0] >= parts[1]) {
+        alert('Línea ' + (i+1) + ': debe ser "min,max" con min < max (ej: 104,120).');
+        return;
+      }
+      zones.push({min: parts[0], max: parts[1]});
+    }
+    window.customHRZones = zones;
+    // No alert
+  } else if (method === 'lactate') {
+    var lactate = parseFloat(document.getElementById('hr-lactate-value').value);
+    if (isNaN(lactate) || lactate <= 0) {
+      alert('Ingrese un valor válido para umbral de lactato.');
+      return;
+    }
+    // Percentages based on Garmin zones relative to lactate threshold
+    var lowerPct = [0.58, 0.68, 0.80, 0.91, 1.02];
+    var upperPct = [0.67, 0.79, 0.90, 1.01, 1.14];
+    var zones = [];
+    for (var i = 0; i < 5; i++) {
+      var min = Math.round(lactate * lowerPct[i]);
+      var max = Math.round(lactate * upperPct[i]);
+      zones.push({min: min, max: max});
+    }
+    window.customHRZones = zones;
+    // No alert
+  } else if (method === 'maxhr') {
+    var maxhr = parseFloat(document.getElementById('hr-maxhr-value').value);
+    if (isNaN(maxhr) || maxhr <= 0) {
+      alert('Ingrese un valor válido para FC máxima.');
+      return;
+    }
+    var percentages = [0.50, 0.60, 0.70, 0.80, 0.90];
+    var zones = [];
+    for (var i = 0; i < 5; i++) {
+      var min = Math.round(maxhr * percentages[i]);
+      var max = Math.round(maxhr * (percentages[i+1] || 1.0));
+      if (i === 4) max = maxhr;
+      zones.push({min: min, max: max});
+    }
+    window.customHRZones = zones;
+    // No alert
+  }
+  // Recompute zones from stored records if available
+  recomputeHRZonesFromRecords();
+  // Re-render if there is data in json-input
+  var json = document.getElementById('json-input').value.trim();
+  if (json) {
+    render();
+  }
+}
 </script>
 </body>
 </html>
