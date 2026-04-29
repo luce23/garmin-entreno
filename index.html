@@ -106,6 +106,18 @@ body{background:#0b0c0f;color:#eaeaea;font-family:-apple-system,BlinkMacSystemFo
 
 table{width:100%;min-width:680px;border-collapse:collapse;font-size:12px;color:#eaeaea;table-layout:auto}
 @media(min-width:768px){table{font-size:12px}}
+table.interval-table{min-width:1500px;table-layout:fixed}
+table.interval-table col.col-step{width:170px}
+table.interval-table col.col-lap{width:90px}
+table.interval-table col.col-time{width:115px}
+table.interval-table col.col-cum-time{width:155px}
+table.interval-table col.col-dist{width:120px}
+table.interval-table col.col-speed{width:80px}
+table.interval-table col.col-cad{width:90px}
+table.interval-table col.col-pace{width:90px}
+table.interval-table col.col-hr{width:90px}
+table.interval-table col.col-hr-max{width:90px}
+table.interval-table col.col-zone{width:170px}
 
 th{text-align:right;color:#6a7280;font-weight:500;
   padding:4px 16px 10px 16px;font-size:10px;
@@ -119,6 +131,10 @@ th:nth-child(6){min-width:56px}  /* FC med */
 th:nth-child(7){min-width:56px}  /* FC máx */
 th.th-zona{padding-left:40px;text-align:right;min-width:130px;white-space:nowrap}
 th.th-dist{text-align:right}
+table.interval-table th.col-lap,table.interval-table th.col-time,table.interval-table th.col-cum-time,
+table.interval-table td.col-lap,table.interval-table td.col-time,table.interval-table td.col-cum-time{
+  text-align:center;padding-left:10px;padding-right:10px}
+table.interval-table td.col-lap .metric,table.interval-table td.col-time .metric,table.interval-table td.col-cum-time .metric{align-items:center}
 td:first-child{text-align:left;padding-left:2px;padding-right:8px}
 .th-sub{display:block;font-size:8.5px;color:#404550;font-weight:400;margin-top:1px;text-align:right}
 .th-sub-inline{font-size:8.5px;color:#404550;font-weight:400}
@@ -872,9 +888,9 @@ var hasRef=ref!==null;
 var rowClassDesc=isDesc?' desc-row':'';
     var descStyle=isDesc?'style="color:#252830"':'';
     var _extraCells=esIntervalos
-      ?'<td style="text-align:center;color:#6a7280;font-weight:700;font-size:11px">'+_vuelta+'</td>'
-        +'<td><div class="metric"><div class="main">'+secsToStepStr(_thisDur)+'</div></div></td>'
-        +'<td><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+_cumDisplay+'</div></div></td>'
+      ?'<td class="col-lap" style="color:#6a7280;font-weight:700;font-size:11px">'+_vuelta+'</td>'
+        +'<td class="col-time"><div class="metric"><div class="main">'+secsToStepStr(_thisDur)+'</div></div></td>'
+        +'<td class="col-cum-time"><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+_cumDisplay+'</div></div></td>'
       :'';
     return '<tr id="'+rowId+'" class="'+(rowClass||'')+rowClassDesc+'">'
         +'<td>'+labelHtml+'</td>'
@@ -890,9 +906,9 @@ var rowClassDesc=isDesc?' desc-row':'';
 return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
         +'<td>'+labelHtml+'</td>'
         +(esIntervalos
-          ?'<td style="text-align:center;color:#6a7280;font-weight:700;font-size:11px">'+_vuelta+'</td>'
-            +'<td><div class="metric"><div class="main">'+secsToStepStr(_thisDur)+'</div></div></td>'
-            +'<td><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+_cumDisplay+'</div></div></td>'
+          ?'<td class="col-lap" style="color:#6a7280;font-weight:700;font-size:11px">'+_vuelta+'</td>'
+            +'<td class="col-time"><div class="metric"><div class="main">'+secsToStepStr(_thisDur)+'</div></div></td>'
+            +'<td class="col-cum-time"><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+_cumDisplay+'</div></div></td>'
           :'')
         +'<td><div class="metric"><div class="main">'+s.dist_km.toFixed(2)+' km</div>'+elevHtml(s.desnivel)+'</div></td>'
         +'<td><div class="metric"><div class="main">'+toKmh(s.speed)+'</div>'+(hasRef?dKmh(s.speed,ref.speed):'')+'</div></td>'
@@ -949,9 +965,9 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
     var firstCell=(canToggle?'<span class="group-arrow">▼</span>':'')+label;
     return '<tr'+attrs+' class="'+rowClass+' step-summary">'
       +'<td>'+firstCell+'</td>'
-      +'<td style="text-align:center;font-weight:600">'+(s.vuelta||'')+'</td>'
-      +'<td><div class="metric"><div class="main">'+(dur?secsToStr(dur):'—')+'</div></div></td>'
-      +'<td><div class="metric"><div class="main">'+(cumSecs?secsToStr(cumSecs):'—')+'</div></div></td>'
+      +'<td class="col-lap" style="font-weight:600">'+(s.vuelta||'')+'</td>'
+      +'<td class="col-time"><div class="metric"><div class="main">'+(dur?secsToStr(dur):'—')+'</div></div></td>'
+      +'<td class="col-cum-time"><div class="metric"><div class="main">'+(cumSecs?secsToStr(cumSecs):'—')+'</div></div></td>'
       +'<td><div class="metric"><div class="main">'+s.dist_km.toFixed(2)+' km</div>'+elevHtml(s.desnivel)+'</div></td>'
       +'<td><div class="metric"><div class="main">'+toKmh(s.speed)+'</div></div></td>'
       +'<td><div class="metric"><div class="main">'+(s.cadencia||'—')+'</div></div></td>'
@@ -1089,10 +1105,18 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
     }
   }
 
-  var distSes='<div class="metric"><div class="main">'+(d.distancia_total||'—')+'</div>'+(desnivelAcum>0?'<div class="elev dp">▲ +'+desnivelAcum+'m acum.</div>':'')+'</div>';
+  // Calcular tiempo total y tiempo activo
+  var totalSecs=Math.round(allR.reduce(function(a,r){return a+rowDur(r);},0));
+  var activeSecs=Math.round(activeOnlyArr.reduce(function(a,r){return a+rowDur(r);},0));
+  // Si no hay dur_secs, estimar desde dist/speed
+  if(!totalSecs)totalSecs=allR.reduce(function(a,r){return a+(r.speed>0?Math.round(r.dist_km*1000/r.speed):0);},0);
+  if(!activeSecs)activeSecs=activeOnlyArr.reduce(function(a,r){return a+(r.speed>0?Math.round(r.dist_km*1000/r.speed):0);},0);
 
+  var distSes='<div class="metric"><div class="main">'+(d.distancia_total||'—')+'</div>'+(desnivelAcum>0?'<div class="elev dp">▲ +'+desnivelAcum+'m acum.</div>':'')+'</div>';
   var zonasGlobal=zonas.length?zonas:aggregateZones(allR);
   var zonasSeries=aggregateZones(activeOnlyArr);
+  var totalTimeHtml='<div class="metric"><div class="main">'+(totalSecs?secsToStr(totalSecs):'')+'</div></div>';
+  var activeTimeHtml='<div class="metric"><div class="main">'+(activeSecs?secsToStr(activeSecs):'')+'</div></div>';
 
   if(esCarrera){
     rows+='<tr class="avg-act"><td>Media sesión</td>'
@@ -1105,7 +1129,7 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
       +zonaCellHtml(zonasGlobal)+'</tr>';
   } else {
     rows+='<tr class="avg-row"><td>Media sesión</td>'
-      +'<td></td><td></td><td></td>'
+      +'<td class="col-lap"></td><td class="col-time">'+totalTimeHtml+'</td><td class="col-cum-time">'+totalTimeHtml+'</td>'
       +'<td>'+distSes+'</td>'
       +'<td><div class="metric"><div class="main">'+avgKmhSes+'</div></div></td>'
       +(avgCadSes!=='—'?'<td><div class="metric"><div class="main">'+avgCadSes+'</div></div></td>':'<td></td>')
@@ -1114,7 +1138,7 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
       +'<td><div class="metric"><div class="main"><span class="fc-max-pill">'+avgFCxSes+'</span></div></div></td>'
       +zonaCellHtml(zonasGlobal)+'</tr>'
       +'<tr class="avg-act"><td>Media trabajo efectivo</td>'
-      +'<td></td><td></td><td></td>'
+      +'<td class="col-lap"></td><td class="col-time">'+activeTimeHtml+'</td><td class="col-cum-time">'+activeTimeHtml+'</td>'
       +'<td><div class="metric"><div class="main">'+avgDSer+'</div>'+elevHtml(avgDsnivelSer)+'</div></td>'
       +'<td><div class="metric"><div class="main">'+avgKmhSer+'</div></div></td>'
       +(avgCadSer!=='—'?'<td><div class="metric"><div class="main">'+avgCadSer+'</div></div></td>':'<td></td>')
@@ -1163,13 +1187,9 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
 
   var thSerie=esCarrera?'Km':esLibre?'Lap':'Tipo de paso';
   var actIdx=Math.random().toString(36).slice(2,8);
-
-  // Calcular tiempo total y tiempo activo
-  var totalSecs=Math.round(allR.reduce(function(a,r){return a+rowDur(r);},0));
-  var activeSecs=Math.round(activeOnlyArr.reduce(function(a,r){return a+rowDur(r);},0));
-  // Si no hay dur_secs, estimar desde dist/speed
-  if(!totalSecs)totalSecs=allR.reduce(function(a,r){return a+(r.speed>0?Math.round(r.dist_km*1000/r.speed):0);},0);
-  if(!activeSecs)activeSecs=activeOnlyArr.reduce(function(a,r){return a+(r.speed>0?Math.round(r.dist_km*1000/r.speed):0);},0);
+  var colgroup=esIntervalos
+    ?'<colgroup><col class="col-step"><col class="col-lap"><col class="col-time"><col class="col-cum-time"><col class="col-dist"><col class="col-speed"><col class="col-cad"><col class="col-pace"><col class="col-hr"><col class="col-hr-max"><col class="col-zone"></colgroup>'
+    :'';
 
   function fmtDur(s){if(!s||!isFinite(s))return'—';s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;if(h>0)return h+'h '+m+'min';if(m>0)return m+'min '+(sc>0?sc+'s':'');return sc+'s';}
 
@@ -1185,10 +1205,11 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
     +' onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur()}"'
     +' title="Haz clic para editar">'+lblContent+'</div>'
     +statsHtml
-    +'<div class="table-scroll"><table>'
+    +'<div class="table-scroll"><table class="'+(esIntervalos?'interval-table':'')+'">'
+    +colgroup
     +'<thead><tr>'
     +'<th>'+thSerie+'</th>'
-    +(esIntervalos?'<th>Vuelta</th><th>Tiempo</th><th>Tiempo acumulado</th>':'')
+    +(esIntervalos?'<th class="col-lap">Vuelta</th><th class="col-time">Tiempo</th><th class="col-cum-time">Tiempo acumulado</th>':'')
     +'<th class="th-dist">Distancia<span style="margin:0 5px;opacity:.3">·</span><span class="th-sub-inline">Desnivel</span></th>'
     +'<th>km/h</th>'
     +'<th>Cadencia</th>'
