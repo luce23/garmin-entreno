@@ -195,16 +195,25 @@ tr.phase-header td{
   color:#7a8a9e;font-weight:600;font-size:11px;
   border-bottom:.5px solid #1a1b22;border-top:.5px solid #1a1b22}
 tr.phase-header td:first-child{padding-left:4px}
+tr.step-summary td{
+  background:#ccff18!important;
+  color:#0b0c0f!important;
+  font-weight:500;
+  border-bottom:.5px solid rgba(0,0,0,.12);
+  border-top:.5px solid rgba(0,0,0,.08)}
+tr.step-summary .main,tr.step-summary .group-label,tr.step-summary .group-dur{color:#0b0c0f!important}
+tr.step-summary .sub,tr.step-summary .elev{color:rgba(11,12,15,.55)!important}
+tr.step-summary:hover td{background:#ccff18!important}
 .hide-btn{
   display:inline-flex;align-items:center;justify-content:center;
   width:16px;height:16px;border-radius:4px;
   background:transparent;border:1px solid transparent;
   color:#2a3040;font-size:9px;cursor:pointer;
-  transition:background .12s,color .12s,border-color .12s;
+  opacity:0;transition:opacity .12s,background .12s,color .12s,border-color .12s;
   vertical-align:middle;margin-left:4px;flex-shrink:0;
   user-select:none;line-height:1}
 .hide-btn:hover{background:#1e1f25;border-color:#2a3040;color:#e74c3c}
-td:first-child:hover .hide-btn{color:#454a55}
+td:first-child:hover .hide-btn{opacity:1;color:#454a55}
 .lap-label-cell{display:flex;align-items:baseline;gap:0;flex-direction:column}
 .lap-label-row{display:flex;align-items:center;gap:2px}
 
@@ -429,6 +438,7 @@ const toRitmo=s=>{
 };
 const ritmoSecs=s=>(!s||s<=0)?0:1000/s;
 const secsToStr=t=>{if(!t||t<=0||!isFinite(t))return'';const m=Math.floor(t/60),s=Math.round(t%60);return m+':'+(s<10?'0':'')+s};
+const secsToStepStr=t=>{if(!t||t<=0||!isFinite(t))return'—';let v=Math.round(t*10)/10,m=Math.floor(v/60),s=v-m*60;if(Math.abs(s-60)<0.05){m++;s=0}let whole=Math.abs(s-Math.round(s))<0.05;if(whole){s=Math.round(s);return m+':'+(s<10?'0':'')+s}let txt=s.toFixed(1).replace('.',',');if(s<10)txt='0'+txt;return m+':'+txt};
 const avg=(arr,fn)=>arr.length?arr.reduce((a,r)=>a+fn(r),0)/arr.length:0;
 
 // Garmin Connect zone colors (fixed by zone number, not by name)
@@ -621,8 +631,7 @@ function _normLabel(label){
   if(/^(cooldown|cool.?down|enfriamiento|recovery|vuelta.?calma)$/i.test(l))return'Recuperación';
   if(/^(warmup|warm.?up|calentamiento)$/i.test(l))return'Calentamiento';
   if(/^(rest|rec\s*\d*|recuperaci[oó]n\s*\d*)$/i.test(l)){
-    var num=l.match(/\d+/);
-    return num?'Descanso '+num[0]:'Descanso';
+    return'Descanso';
   }
   return l;
 }
@@ -748,12 +757,13 @@ var allR=[];
 
   var desnivelAcum=allR.reduce(function(a,r){var n=parseInt(r.desnivel)||0;return a+(n>0?n:0);},0);
   function ravg(arr,fn){return arr.length?arr.reduce(function(a,r){return a+fn(r);},0)/arr.length:0;}
-  function sumDur(arr){return arr.reduce(function(a,r){return a+(r.dur_secs||0);},0);}
+  function rowDur(r){return r.dur_raw_secs||r.dur_secs||0;}
+  function sumDur(arr){return arr.reduce(function(a,r){return a+rowDur(r);},0);}
   function sumDist(arr){return arr.reduce(function(a,r){return a+(r.dist_km||0);},0);}
   function timeAvg(arr,fn){
     var den=sumDur(arr);
     if(!den)return arr.length?ravg(arr,fn):0;
-    return arr.reduce(function(a,r){return a+fn(r)*(r.dur_secs||0);},0)/den;
+    return arr.reduce(function(a,r){return a+fn(r)*rowDur(r);},0)/den;
   }
   // Media sesión: TODO (warmup + series + descansos + cooldown)
   var validAllR=allR.filter(function(r){return r.speed>=0.01;});
@@ -769,7 +779,7 @@ var allR=[];
   // FC max sesión: máximo de TODO
   var fcMaxAll=allR.filter(function(r){return r.fc_max>0;});
   var avgFCxSes=fcMaxAll.length?Math.max.apply(null,fcMaxAll.map(function(r){return r.fc_max;})):'—';
-  // Media series: SOLO series activas (no rests, no warmup, no cooldown)
+  // Media trabajo efectivo: solo vueltas activas (sin descansos, calentamiento ni recuperación)
   var activeOnlyArr=seriesArr.filter(function(s){return!_isDescanso(s);});
   var activeOnlyArrWithFC=activeOnlyArr.filter(function(r){return r.fc_med>0;});
   var totalDurSer=sumDur(activeOnlyArr);
@@ -811,9 +821,10 @@ var allR=[];
     _rowNum++;
     var _rn=_rowNum;
     var _vuelta=s.vuelta||s.lapLabel||_rn;
-    var _thisDur=s.dur_secs||0;
+    var _thisDur=s.dur_raw_secs||s.dur_secs||0;
     _cumTimeSecs+=_thisDur;
     var _ct=_cumTimeSecs;
+    var _cumDisplay=Math.abs(_ct-_thisDur)<0.05?secsToStepStr(_ct):secsToStr(_ct);
     var isPillByVal=s.fc_max>0&&s.fc_max===maxFCxVal&&!isDesc;
     var fcmaxVal=isPillByVal?'<span class="fc-max-pill">'+s.fc_max+'</span>':''+s.fc_max;
     var lbl=s.label||'—';
@@ -826,7 +837,7 @@ var allR=[];
       +(indentPx?'<span style="display:inline-block;width:'+indentPx+'px;flex-shrink:0"></span>':'')
       +'<span style="'+(isDesc?'color:#252830':'')+'">'+lbl+'</span>'
       +durSpan
-      +(hideButton?_hideBtn(ri):'')
+      +(hideButton&&!esIntervalos?_hideBtn(ri):'')
       +'</div></div>';
 
 var hasRef=ref!==null;
@@ -853,8 +864,8 @@ var rowClassDesc=isDesc?' desc-row':'';
     var descStyle=isDesc?'style="color:#252830"':'';
     var _extraCells=esIntervalos
       ?'<td style="text-align:center;color:#6a7280;font-weight:700;font-size:11px">'+_vuelta+'</td>'
-        +'<td><div class="metric"><div class="main">'+(_thisDur?secsToStr(_thisDur):'—')+'</div></div></td>'
-        +'<td><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+(_ct?secsToStr(_ct):'—')+'</div></div></td>'
+        +'<td><div class="metric"><div class="main">'+secsToStepStr(_thisDur)+'</div></div></td>'
+        +'<td><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+_cumDisplay+'</div></div></td>'
       :'';
     return '<tr id="'+rowId+'" class="'+(rowClass||'')+rowClassDesc+'">'
         +'<td>'+labelHtml+'</td>'
@@ -871,8 +882,8 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
         +'<td>'+labelHtml+'</td>'
         +(esIntervalos
           ?'<td style="text-align:center;color:#6a7280;font-weight:700;font-size:11px">'+_vuelta+'</td>'
-            +'<td><div class="metric"><div class="main">'+(_thisDur?secsToStr(_thisDur):'—')+'</div></div></td>'
-            +'<td><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+(_ct?secsToStr(_ct):'—')+'</div></div></td>'
+            +'<td><div class="metric"><div class="main">'+secsToStepStr(_thisDur)+'</div></div></td>'
+            +'<td><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+_cumDisplay+'</div></div></td>'
           :'')
         +'<td><div class="metric"><div class="main">'+s.dist_km.toFixed(2)+' km</div>'+elevHtml(s.desnivel)+'</div></td>'
         +'<td><div class="metric"><div class="main">'+toKmh(s.speed)+'</div>'+(hasRef?dKmh(s.speed,ref.speed):'')+'</div></td>'
@@ -889,25 +900,51 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
     if(!laps.length)return null;
     var validLaps=laps.filter(function(l){return l.speed>=0.0000001;});
     if(!validLaps.length)validLaps=laps;
-    var totDur=laps.reduce(function(a,l){return a+(l.dur_secs||0);},0);
+    var totDur=laps.reduce(function(a,l){return a+(l.dur_raw_secs||l.dur_secs||0);},0);
     var totDist=laps.reduce(function(a,l){return a+l.dist_km;},0);
     var avgSpd=totDist>0&&totDur>0?totDist*1000/totDur:(validLaps[0].speed||0);
     // Time-weighted HR and cadence (matches Garmin Connect aggregation)
-    var durSum=validLaps.reduce(function(a,l){return a+(l.dur_secs||0);},0)||1;
-    var avgFCm=Math.round(validLaps.reduce(function(a,l){return a+l.fc_med*(l.dur_secs||0);},0)/durSum);
+    var durSum=validLaps.reduce(function(a,l){return a+(l.dur_raw_secs||l.dur_secs||0);},0)||1;
+    var avgFCm=Math.round(validLaps.reduce(function(a,l){return a+l.fc_med*(l.dur_raw_secs||l.dur_secs||0);},0)/durSum);
     var maxFCx=Math.max.apply(null,validLaps.map(function(l){return l.fc_max;}));
     var cadLaps=validLaps.filter(function(l){return l.cadencia>0;});
-    var cadDurSum=cadLaps.reduce(function(a,l){return a+(l.dur_secs||0);},0)||1;
-    var avgCad=cadLaps.length?Math.round(cadLaps.reduce(function(a,l){return a+(l.cadencia||0)*(l.dur_secs||0);},0)/cadDurSum):0;
+    var cadDurSum=cadLaps.reduce(function(a,l){return a+(l.dur_raw_secs||l.dur_secs||0);},0)||1;
+    var avgCad=cadLaps.length?Math.round(cadLaps.reduce(function(a,l){return a+(l.cadencia||0)*(l.dur_raw_secs||l.dur_secs||0);},0)/cadDurSum):0;
     var desnTot=laps.reduce(function(a,l){return a+(parseInt(l.desnivel)||0);},0);
     var zmap={};
     laps.forEach(function(l){(l.zonas_lap||[]).forEach(function(z){
       if(!zmap[z.nombre])zmap[z.nombre]={nombre:z.nombre,secs:0,rango:z.rango||'',color:z.color};
       zmap[z.nombre].secs+=z.secs;
     });});
-    return{label:labelStr,speed:avgSpd,dist_km:totDist,dur_secs:totDur,
+    return{label:labelStr,speed:avgSpd,dist_km:totDist,dur_raw_secs:totDur,dur_secs:Math.round(totDur),
       desnivel:desnTot,fc_med:avgFCm,fc_max:maxFCx,cadencia:avgCad,
       zonas_lap:Object.values(zmap).filter(function(z){return z.secs>0;})};
+  }
+
+  function _rangeFromRows(laps){
+    var nums=[];
+    laps.forEach(function(l){
+      String(l.vuelta||'').split(/\D+/).forEach(function(p){var n=parseInt(p);if(n)nums.push(n);});
+    });
+    if(!nums.length)return'';
+    var a=Math.min.apply(null,nums),b=Math.max.apply(null,nums);
+    return a===b?String(a):a+' - '+b;
+  }
+
+  function _summaryRow(s, rowClass, label, cumSecs, zonasForRow){
+    var dur=s.dur_raw_secs||s.dur_secs||0;
+    return '<tr class="'+rowClass+' step-summary">'
+      +'<td>'+label+'</td>'
+      +'<td style="text-align:center;font-weight:600">'+(s.vuelta||'')+'</td>'
+      +'<td><div class="metric"><div class="main">'+(dur?secsToStr(dur):'—')+'</div></div></td>'
+      +'<td><div class="metric"><div class="main">'+(cumSecs?secsToStr(cumSecs):'—')+'</div></div></td>'
+      +'<td><div class="metric"><div class="main">'+s.dist_km.toFixed(2)+' km</div>'+elevHtml(s.desnivel)+'</div></td>'
+      +'<td><div class="metric"><div class="main">'+toKmh(s.speed)+'</div></div></td>'
+      +'<td><div class="metric"><div class="main">'+(s.cadencia||'—')+'</div></div></td>'
+      +'<td><div class="metric"><div class="main">'+toRitmo(s.speed)+'</div></div></td>'
+      +'<td><div class="metric"><div class="main">'+s.fc_med+'</div></div></td>'
+      +'<td><div class="metric"><div class="main">'+s.fc_max+'</div></div></td>'
+      +zonaCellHtml(zonasForRow||s.zonas_lap)+'</tr>';
   }
 
   // ── Group series into intervals ──
@@ -967,20 +1004,7 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
 
     // Also render actual warmup/cooldown objects
     if(warmup){
-      var wi=_rowIdx++;
-      var wgid=_actId+'g'+wi;
-      rows+='<tr id="'+wgid+'" class="phase-header" onclick="_toggleGroup(\''+wgid+'\')">'
-        +'<td><span class="group-arrow">▼</span>Calentamiento'
-        +'<span style="font-size:9px;color:#454a55;margin-left:8px">'+secsToStr(warmup.dur_secs||0)+'</span>'
-        +'</td>'
-        +'<td></td><td></td><td></td>'
-        +'<td><div class="metric"><div class="main">'+warmup.dist_km.toFixed(2)+' km</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+toKmh(warmup.speed)+'</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+(warmup.cadencia||'—')+'</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+toRitmo(warmup.speed)+'</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+warmup.fc_med+'</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+warmup.fc_max+'</div></div></td>'
-        +zonaCellHtml(warmup.zonas_lap)+'</tr>';
+      rows+=_summaryRow(warmup,'phase-header','Calentamiento',_cumTimeSecs+(warmup.dur_raw_secs||warmup.dur_secs||0),warmup.zonas_lap);
       if(warmup.subLaps){
         // Multiple warmup laps: render each with delta from previous
         var subRef=null;
@@ -1007,37 +1031,11 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
         });
         return;
       }
-       // interval group
-       var syn=_synthLap(g.activeLaps,'Intervalo '+g.num);
-       var zonaSyn=_synthLap(g.laps,'');
-       var grpFCx=g.activeLaps.length?Math.max.apply(null,g.activeLaps.map(function(l){return l.fc_max;})):0;
-      var isPillGroup=(grpFCx===maxFCxVal);
-      var grpId=_actId+'g'+_rowIdx;
-      var durStr=syn.dur_secs?secsToStr(syn.dur_secs):'';
-      var fcDisp=isPillGroup?'<span class="fc-max-pill">'+syn.fc_max+'</span>':'<span style="color:#eaeaea;font-weight:700">'+syn.fc_max+'</span>';
-
-        // Deltas vs intervalo anterior
-        var prev=lastGroupSyn;
-        var dKmhH=prev?dKmh(syn.speed,prev.speed):'';
-        var dCadH=prev&&syn.cadencia&&prev.cadencia?_dCadRaw(syn.cadencia,prev.cadencia):'';
-        var dRitmoH=prev?dRitmo(syn.speed,prev.speed):'';
-        var dFCmH=prev?dFC(syn.fc_med,prev.fc_med):'';
-        var dFCxH=prev?dFC(syn.fc_max,prev.fc_max):'';
-
-       rows+='<tr id="'+grpId+'" class="group-header" onclick="_toggleGroup(\''+grpId+'\')">'
-         +'<td><span class="group-arrow">▼</span>'
-         +'<span class="group-num">'+g.num+'</span>'
-         +'<span class="group-label">Intervalo</span>'
-         +'<span class="group-dur">'+durStr+'</span>'
-         +'</td>'
-         +'<td></td><td></td><td></td>'
-         +'<td><div class="metric"><div class="main">'+syn.dist_km.toFixed(2)+' km</div>'+elevHtml(syn.desnivel)+'</div></td>'
-         +'<td><div class="metric"><div class="main">'+toKmh(syn.speed)+'</div>'+dKmhH+'</div></td>'
-         +'<td><div class="metric"><div class="main">'+(syn.cadencia||'—')+'</div>'+dCadH+'</div></td>'
-         +'<td><div class="metric"><div class="main">'+toRitmo(syn.speed)+'</div>'+dRitmoH+'</div></td>'
-         +'<td><div class="metric"><div class="main">'+syn.fc_med+'</div>'+dFCmH+'</div></td>'
-         +'<td><div class="metric"><div class="main">'+fcDisp+'</div>'+dFCxH+'</div></td>'
-          +zonaCellHtml(zonaSyn.zonas_lap)+'</tr>';
+      // interval group
+      var syn=_synthLap(g.activeLaps,'Carrera');
+      syn.vuelta=_rangeFromRows(g.activeLaps);
+      var zonaSyn=_synthLap(g.laps,'');
+      rows+=_summaryRow(syn,'group-header','Carrera',_cumTimeSecs+(syn.dur_raw_secs||syn.dur_secs||0),zonaSyn.zonas_lap);
 
       // Laps individuales
       g.laps.forEach(function(s){
@@ -1050,21 +1048,14 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
     });
 
     if(cooldown){
-      var ci2=_rowIdx++;
-      var cgid=_actId+'g'+ci2;
-      rows+='<tr id="'+cgid+'" class="phase-header" onclick="_toggleGroup(\''+cgid+'\')">'
-        +'<td><span class="group-arrow">▼</span>Recuperación'
-        +'<span style="font-size:9px;color:#454a55;margin-left:8px">'+secsToStr(cooldown.dur_secs||0)+'</span>'
-        +'</td>'
-        +'<td></td><td></td><td></td>'
-        +'<td><div class="metric"><div class="main">'+cooldown.dist_km.toFixed(2)+' km</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+toKmh(cooldown.speed)+'</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+(cooldown.cadencia||'—')+'</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+toRitmo(cooldown.speed)+'</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+cooldown.fc_med+'</div></div></td>'
-        +'<td><div class="metric"><div class="main">'+cooldown.fc_max+'</div></div></td>'
-        +zonaCellHtml(cooldown.zonas_lap)+'</tr>';
-      rows+=_dataRow(cooldown,lastActiveLap,false,false,'group-lap',20,true);
+      rows+=_summaryRow(cooldown,'phase-header','Recuperación',_cumTimeSecs+(cooldown.dur_raw_secs||cooldown.dur_secs||0),cooldown.zonas_lap);
+      if(cooldown.subLaps){
+        cooldown.subLaps.forEach(function(sub){
+          rows+=_dataRow(sub,lastActiveLap,false,false,'group-lap',20,true);
+        });
+      } else {
+        rows+=_dataRow(cooldown,lastActiveLap,false,false,'group-lap',20,true);
+      }
     }
 
   } else {
@@ -1160,8 +1151,8 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
   var actIdx=Math.random().toString(36).slice(2,8);
 
   // Calcular tiempo total y tiempo activo
-  var totalSecs=Math.round(allR.reduce(function(a,r){return a+(r.dur_secs||0);},0));
-  var activeSecs=Math.round(activeOnlyArr.reduce(function(a,r){return a+(r.dur_secs||0);},0));
+  var totalSecs=Math.round(allR.reduce(function(a,r){return a+rowDur(r);},0));
+  var activeSecs=Math.round(activeOnlyArr.reduce(function(a,r){return a+rowDur(r);},0));
   // Si no hay dur_secs, estimar desde dist/speed
   if(!totalSecs)totalSecs=allR.reduce(function(a,r){return a+(r.speed>0?Math.round(r.dist_km*1000/r.speed):0);},0);
   if(!activeSecs)activeSecs=activeOnlyArr.reduce(function(a,r){return a+(r.speed>0?Math.round(r.dist_km*1000/r.speed):0);},0);
@@ -1183,7 +1174,7 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
     +'<div class="table-scroll"><table>'
     +'<thead><tr>'
     +'<th>'+thSerie+'</th>'
-    +(esIntervalos?'<th>Vuelta</th><th>Tiempo</th><th>Tiempo acum.</th>':'')
+    +(esIntervalos?'<th>Vuelta</th><th>Tiempo</th><th>Tiempo acumulado</th>':'')
     +'<th class="th-dist">Distancia<span style="margin:0 5px;opacity:.3">·</span><span class="th-sub-inline">Desnivel</span></th>'
     +'<th>km/h</th>'
     +'<th>Cadencia</th>'
@@ -1258,8 +1249,7 @@ function fromChatGPTNested(raw){
       if(isWarm&&!series.length&&!warmup){s.label='Calentamiento';warmup=s;}
       else if(isCool&&!isRec){s.label='Recuperación';cooldown=s;}
       else if(isRec){
-        const recN=series.filter(x=>_isDescanso&&/descanso/i.test(x.label)).length+1;
-        s.label=`Descanso ${recN}`;series.push(s);
+        s.label='Descanso';series.push(s);
       } else {
         activeCount++;s.label='Carrera';series.push(s);
       }
@@ -1572,12 +1562,7 @@ function fromRawGarmin(raw){
   // Keep every Garmin lap visible. Group headers synthesize workout-step totals,
   // while the new "Vuelta" column needs the original lap rows (1, 2, 3...).
 
-  // Filter trailing tiny noise laps (<5s AND <50m)
-  while(laps.length>0){
-    const last=laps[laps.length-1];
-    if(last.duration<5&&last.distance<50)laps.pop();
-    else break;
-  }
+  // Keep Garmin's final mini-laps: Connect shows them as real recovery rows.
   if(!laps.length){
     return{fecha:fechaFmt,nombre:name,tipo,modo:'carrera',estructura:null,
       distancia_total:(sumDist/1000).toFixed(2)+' km',
@@ -1653,17 +1638,29 @@ function fromRawGarmin(raw){
     const wCad=cooldownLaps.reduce((a,l)=>a+(l.averageRunCadence*l.duration),0)/(totDur||1);
     const wSpd=totDur>0?totDist/totDur:0;
     const synthLap={averageHR:wHR,duration:totDur,hrTimeInZone:mergeHrZones(cooldownLaps)};
+    const subLaps=cooldownLaps.length>1?cooldownLaps.map((lap)=>{
+      var cad=lap.avgRunningCadence||lap.averageRunCadence||lap.avg_running_cadence||lap.avg_cadence||lap.avg_run_cadence||lap.averageCadence||lap.cadencia||lap.cadence||0;
+      return{label:'Recuperación',_intensityType:'RECOVERY',
+        vuelta:lapRange([lap]),
+        speed:lap.averageSpeed,dist_km:Math.round(lap.distance/10)/100,
+        dur_raw_secs:lap.duration,dur_secs:Math.round(lap.duration),cadencia:Math.round(cad),
+        desnivel:Math.round((lap.elevationGain||0)-(lap.elevationLoss||0)),
+        fc_med:Math.round(lap.averageHR||0),fc_max:Math.round(lap.maxHR||0),
+        zonas_lap:lapZones(lap)};
+    }):null;
     cooldown={
       label:'Recuperación',_intensityType:'RECOVERY',
       speed:wSpd,
       dist_km:Math.round(totDist/10)/100,
+      dur_raw_secs:totDur,
       dur_secs:Math.round(totDur),
       cadencia:Math.round(wCad),
       desnivel:0,
       fc_med:Math.round(wHR),
       fc_max:Math.round(maxHR),
       vuelta:lapRange(cooldownLaps),
-      zonas_lap:lapZones(synthLap)
+      zonas_lap:lapZones(synthLap),
+      subLaps
     };
   }
 
@@ -1686,14 +1683,14 @@ function fromRawGarmin(raw){
       return{label:'Calentamiento',_intensityType:'WARMUP',
         vuelta:lapRange([lap]),
         speed:lap.averageSpeed,dist_km:Math.round(lap.distance/10)/100,
-        dur_secs:Math.round(lap.duration),cadencia:Math.round(cad),
+        dur_raw_secs:lap.duration,dur_secs:Math.round(lap.duration),cadencia:Math.round(cad),
         desnivel:Math.round((lap.elevationGain||0)-(lap.elevationLoss||0)),
         fc_med:Math.round(lap.averageHR||0),fc_max:Math.round(lap.maxHR||0),
         zonas_lap:lapZones(lap)};
     }):null;
     warmup={
       label:'Calentamiento',_intensityType:'WARMUP',
-      speed:wSpd,dist_km:Math.round(totDist/10)/100,dur_secs:Math.round(totDur),
+      speed:wSpd,dist_km:Math.round(totDist/10)/100,dur_raw_secs:totDur,dur_secs:Math.round(totDur),
       cadencia:Math.round(wCad),desnivel:0,
       fc_med:Math.round(wHR),fc_max:maxHR,
       vuelta:lapRange(warmupRawLaps),
@@ -1711,6 +1708,7 @@ function fromRawGarmin(raw){
       label:'',_intensityType:intensity,
       speed:lap.averageSpeed,
       dist_km,dur_secs,
+      dur_raw_secs:lap.duration,
       cadencia:Math.round(cad),
       desnivel:Math.round((lap.elevationGain||0)-(lap.elevationLoss||0)),
       fc_med:Math.round(lap.averageHR||0),
@@ -1719,9 +1717,9 @@ function fromRawGarmin(raw){
       zonas_lap:lapZones(lap)
     };
     if(intensity==='REST'){
-      restCount++;s.label=`Descanso ${restCount}`;s._intensityType='REST';series.push(s);
+      restCount++;s.label='Descanso';s._intensityType='REST';series.push(s);
     } else if(intensity==='RECOVERY'){
-      restCount++;s.label=`Descanso ${restCount}`;s._intensityType='REST';series.push(s);
+      restCount++;s.label='Descanso';s._intensityType='REST';series.push(s);
     } else {
       activeCount++;s.label='Carrera';series.push(s);
     }
