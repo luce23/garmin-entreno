@@ -142,6 +142,28 @@ td:first-child{text-align:left;padding-left:2px;padding-right:8px}
 td{padding:15px 16px 15px 16px;border-bottom:.5px solid #111318;
   vertical-align:middle;text-align:right;color:#eaeaea;background:transparent}
 td.td-zona{padding-left:40px;padding-right:4px;min-width:130px;text-align:right}
+.capturing .actividad{padding-left:12px!important;padding-right:12px!important}
+.capturing .table-scroll{margin:0!important}
+.capturing table.interval-table{min-width:1760px!important;font-size:13px}
+.capturing table.interval-table col.col-step{width:190px}
+.capturing table.interval-table col.col-lap{width:95px}
+.capturing table.interval-table col.col-time{width:125px}
+.capturing table.interval-table col.col-cum-time{width:170px}
+.capturing table.interval-table col.col-dist{width:145px}
+.capturing table.interval-table col.col-speed{width:90px}
+.capturing table.interval-table col.col-cad{width:100px}
+.capturing table.interval-table col.col-pace{width:105px}
+.capturing table.interval-table col.col-hr{width:100px}
+.capturing table.interval-table col.col-hr-max{width:100px}
+.capturing table.interval-table col.col-zone{width:300px}
+.capturing th{font-size:10.5px}
+.capturing td{padding-left:14px;padding-right:14px}
+.capturing td.td-zona{padding-left:28px!important;min-width:270px!important}
+.capturing .zone-mini{min-width:235px!important}
+.capturing .zone-mini-item{margin-bottom:6px!important}
+.capturing .zone-mini-short{font-size:9.5px!important}
+.capturing .zone-mini-value{font-size:9px!important}
+.capturing .zone-mini-track{height:4px!important}
 
 /* ── ESTRUCTURA ── */
 .estructura-badge{
@@ -613,18 +635,18 @@ function zonaCellHtml(zonas_lap){
     const short='Z'+(zEntry.num||z.nombre.match(/\d/)||'?');
     const col=zonaColor(z.nombre)||z.color;
     const last=i===activas.length-1;
-    return`<div style="${last?'':'margin-bottom:4px'}">
+    return`<div class="zone-mini-item" style="${last?'':'margin-bottom:4px'}">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
-        <span style="font-size:8px;color:${col};font-weight:700;letter-spacing:.3px">${short}</span>
-        <span style="font-size:7.5px;color:#ccc;padding-left:6px">${m}:${s<10?'0':''}${s}<span style="color:#555"> · ${pct}%</span></span>
+        <span class="zone-mini-short" style="font-size:8px;color:${col};font-weight:700;letter-spacing:.3px">${short}</span>
+        <span class="zone-mini-value" style="font-size:7.5px;color:#ccc;padding-left:6px">${m}:${s<10?'0':''}${s}<span style="color:#555"> · ${pct}%</span></span>
       </div>
-      <div style="height:3px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
+      <div class="zone-mini-track" style="height:3px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${col};border-radius:3px"></div>
       </div>
     </div>`;
   }).join('');
   return`<td class="td-zona">
-    <div style="display:block;text-align:left;min-width:110px">${items}</div>
+    <div class="zone-mini" style="display:block;text-align:left;min-width:110px">${items}</div>
   </td>`;
 }
 
@@ -1950,7 +1972,7 @@ function _captureEl(callback){
 
   const wrapper=document.createElement('div');
   wrapper.id='capture-wrapper-'+Date.now();
-  wrapper.style.cssText='position:fixed;top:-99999px;left:0;background:#0b0c0f;padding:32px;'
+  wrapper.style.cssText='position:fixed;top:-99999px;left:0;background:#0b0c0f;padding:16px;'
     +'width:1400px;max-width:1400px;box-sizing:border-box;z-index:-9999;overflow:visible;';
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
@@ -1961,8 +1983,8 @@ function _captureEl(callback){
 
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     setTimeout(()=>{
-    const w=Math.max(wrapper.scrollWidth,clone.scrollWidth)+64;
-    const h=wrapper.scrollHeight+64;
+    const w=Math.max(wrapper.scrollWidth,clone.scrollWidth)+16;
+    const h=wrapper.scrollHeight+16;
     html2canvas(wrapper,{
       backgroundColor:'#0b0c0f',
       scale:scale,
@@ -1999,7 +2021,7 @@ function copyImg(){
 
   const wrapper=document.createElement('div');
   wrapper.id='capture-wrapper-'+Date.now();
-  wrapper.style.cssText='position:fixed;top:-99999px;left:0;background:#0b0c0f;padding:32px;'
+  wrapper.style.cssText='position:fixed;top:-99999px;left:0;background:#0b0c0f;padding:16px;'
     +'width:1400px;max-width:1400px;box-sizing:border-box;z-index:-9999;overflow:visible;';
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
@@ -2009,8 +2031,8 @@ function copyImg(){
 
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     setTimeout(()=>{
-    const w=Math.max(wrapper.scrollWidth,clone.scrollWidth)+64;
-    const h=wrapper.scrollHeight+64;
+    const w=Math.max(wrapper.scrollWidth,clone.scrollWidth)+16;
+    const h=wrapper.scrollHeight+16;
     html2canvas(wrapper,{
       backgroundColor:'#0b0c0f',scale,useCORS:true,logging:false,
       width:w,height:h,windowWidth:w,windowHeight:h,
