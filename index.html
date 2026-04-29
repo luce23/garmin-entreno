@@ -203,6 +203,9 @@ tr.step-summary td{
   border-top:.5px solid rgba(0,0,0,.08)}
 tr.step-summary .main,tr.step-summary .group-label,tr.step-summary .group-dur{color:#0b0c0f!important}
 tr.step-summary .sub,tr.step-summary .elev{color:rgba(11,12,15,.55)!important}
+tr.step-summary .group-arrow{color:rgba(11,12,15,.65)!important}
+tr.step-summary .td-zona span{color:#0b0c0f!important}
+tr.step-summary .td-zona div[style*="background:rgba(255,255,255"]{background:rgba(0,0,0,.16)!important}
 tr.step-summary:hover td{background:#ccff18!important}
 .hide-btn{
   display:inline-flex;align-items:center;justify-content:center;
@@ -933,8 +936,13 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
 
   function _summaryRow(s, rowClass, label, cumSecs, zonasForRow){
     var dur=s.dur_raw_secs||s.dur_secs||0;
-    return '<tr class="'+rowClass+' step-summary">'
-      +'<td>'+label+'</td>'
+    var gi=_rowIdx++;
+    var gid=_actId+'g'+gi;
+    var canToggle=/\b(group-header|phase-header)\b/.test(rowClass||'');
+    var attrs=canToggle?' id="'+gid+'" onclick="_toggleGroup(\''+gid+'\')"':'';
+    var firstCell=(canToggle?'<span class="group-arrow">▼</span>':'')+label;
+    return '<tr'+attrs+' class="'+rowClass+' step-summary">'
+      +'<td>'+firstCell+'</td>'
       +'<td style="text-align:center;font-weight:600">'+(s.vuelta||'')+'</td>'
       +'<td><div class="metric"><div class="main">'+(dur?secsToStr(dur):'—')+'</div></div></td>'
       +'<td><div class="metric"><div class="main">'+(cumSecs?secsToStr(cumSecs):'—')+'</div></div></td>'
