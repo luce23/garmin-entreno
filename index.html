@@ -858,10 +858,13 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
     var totDur=laps.reduce(function(a,l){return a+(l.dur_secs||0);},0);
     var totDist=laps.reduce(function(a,l){return a+l.dist_km;},0);
     var avgSpd=totDist>0&&totDur>0?totDist*1000/totDur:(validLaps[0].speed||0);
-    var avgFCm=Math.round(validLaps.reduce(function(a,l){return a+l.fc_med;},0)/validLaps.length);
+    // Time-weighted HR and cadence (matches Garmin Connect aggregation)
+    var durSum=validLaps.reduce(function(a,l){return a+(l.dur_secs||0);},0)||1;
+    var avgFCm=Math.round(validLaps.reduce(function(a,l){return a+l.fc_med*(l.dur_secs||0);},0)/durSum);
     var maxFCx=Math.max.apply(null,validLaps.map(function(l){return l.fc_max;}));
     var cadLaps=validLaps.filter(function(l){return l.cadencia>0;});
-    var avgCad=cadLaps.length?Math.round(cadLaps.reduce(function(a,l){return a+(l.cadencia||0);},0)/cadLaps.length):0;
+    var cadDurSum=cadLaps.reduce(function(a,l){return a+(l.dur_secs||0);},0)||1;
+    var avgCad=cadLaps.length?Math.round(cadLaps.reduce(function(a,l){return a+(l.cadencia||0)*(l.dur_secs||0);},0)/cadDurSum):0;
     var desnTot=laps.reduce(function(a,l){return a+(parseInt(l.desnivel)||0);},0);
     var zmap={};
     laps.forEach(function(l){(l.zonas_lap||[]).forEach(function(z){
@@ -931,7 +934,6 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
     // Also render actual warmup/cooldown objects
     if(warmup){
       var wi=_rowIdx++;
-      var wsyn=_synthLap([warmup],'Calentamiento');
       var wgid=_actId+'g'+wi;
       rows+='<tr id="'+wgid+'" class="phase-header" onclick="_toggleGroup(\''+wgid+'\')">'
         +'<td><span class="group-arrow">▼</span>Calentamiento'
@@ -944,9 +946,18 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
         +'<td><div class="metric"><div class="main">'+warmup.fc_med+'</div></div></td>'
         +'<td><div class="metric"><div class="main">'+warmup.fc_max+'</div></div></td>'
         +zonaCellHtml(warmup.zonas_lap)+'</tr>';
-      // Sub-rows hidden by default for phase headers with single lap (auto-show)
-      rows+=_dataRow(warmup,null,false,false,'group-lap',20,true);
-      lastActiveLap=warmup;
+      if(warmup.subLaps){
+        // Multiple warmup laps: render each with delta from previous
+        var subRef=null;
+        warmup.subLaps.forEach(function(sub){
+          rows+=_dataRow(sub,subRef,false,false,'group-lap',20,true);
+          subRef=sub;
+          lastActiveLap=sub;
+        });
+      } else {
+        rows+=_dataRow(warmup,null,false,false,'group-lap',20,true);
+        lastActiveLap=warmup;
+      }
     }
 
     var intervalCount=groups.filter(function(g){return g.type==='interval';}).length;
@@ -1581,7 +1592,39 @@ function fromRawGarmin(raw){
     };
   }
 
-  mainLaps.forEach((lap,i)=>{
+  // Separate ALL consecutive leading WARMUP laps into warmup group (Garmin Connect groups them together)
+  const warmupRawLaps=[];
+  let mlStart=0;
+  for(let i=0;i<mainLaps.length;i++){
+    if(mainLaps[i].intensityType==='WARMUP'){warmupRawLaps.push(mainLaps[i]);mlStart=i+1;}
+    else break;
+  }
+  if(warmupRawLaps.length){
+    const totDist=warmupRawLaps.reduce((a,l)=>a+l.distance,0);
+    const totDur=warmupRawLaps.reduce((a,l)=>a+l.duration,0);
+    const wHR=warmupRawLaps.reduce((a,l)=>a+(l.averageHR*l.duration),0)/(totDur||1);
+    const maxHR=Math.max(...warmupRawLaps.map(l=>l.maxHR||0));
+    const wCad=warmupRawLaps.reduce((a,l)=>a+(l.averageRunCadence*l.duration),0)/(totDur||1);
+    const wSpd=totDur>0?totDist/totDur:0;
+    const subLaps=warmupRawLaps.length>1?warmupRawLaps.map((lap)=>{
+      var cad=lap.avgRunningCadence||lap.averageRunCadence||lap.avg_running_cadence||lap.avg_cadence||lap.avg_run_cadence||lap.averageCadence||lap.cadencia||lap.cadence||0;
+      return{label:'Calentamiento',_intensityType:'WARMUP',
+        speed:lap.averageSpeed,dist_km:Math.round(lap.distance/10)/100,
+        dur_secs:Math.round(lap.duration),cadencia:Math.round(cad),
+        desnivel:Math.round((lap.elevationGain||0)-(lap.elevationLoss||0)),
+        fc_med:Math.round(lap.averageHR||0),fc_max:Math.round(lap.maxHR||0),
+        zonas_lap:lapZones(lap)};
+    }):null;
+    warmup={
+      label:'Calentamiento',_intensityType:'WARMUP',
+      speed:wSpd,dist_km:Math.round(totDist/10)/100,dur_secs:Math.round(totDur),
+      cadencia:Math.round(wCad),desnivel:0,
+      fc_med:Math.round(wHR),fc_max:maxHR,
+      zonas_lap:lapZones({averageHR:wHR,duration:totDur}),
+      subLaps
+    };
+  }
+  mainLaps.slice(mlStart).forEach((lap)=>{
     const intensity=lap.intensityType;
     const dist_km=Math.round(lap.distance/10)/100;
     const dur_secs=Math.round(lap.duration);
@@ -1592,19 +1635,16 @@ function fromRawGarmin(raw){
       speed:lap.averageSpeed,
       dist_km,dur_secs,
       cadencia:Math.round(cad),
-      desnivel:Math.round(lap.elevationGain-lap.elevationLoss),
+      desnivel:Math.round((lap.elevationGain||0)-(lap.elevationLoss||0)),
       fc_med:Math.round(lap.averageHR||0),
       fc_max:Math.round(lap.maxHR||0),
       zonas_lap:lapZones(lap)
     };
-    if(intensity==='WARMUP'&&!warmup){s.label='Calentamiento';warmup=s;return;}
     if(intensity==='REST'){
       restCount++;s.label=`Descanso ${restCount}`;s._intensityType='REST';series.push(s);
     } else if(intensity==='RECOVERY'){
-      // Will be handled as cooldown at end
       restCount++;s.label=`Descanso ${restCount}`;s._intensityType='REST';series.push(s);
     } else {
-      // ACTIVE or INTERVAL or anything else
       activeCount++;s.label=`Serie ${activeCount}`;series.push(s);
     }
   });
