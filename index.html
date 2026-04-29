@@ -170,13 +170,13 @@ td.td-zona{padding-left:40px;padding-right:4px;min-width:130px;text-align:right}
 /* ── ROW TYPES ── */
 tr.avg-row td{background:rgba(255,255,255,.03);font-weight:500;color:#eaeaea}
 tr.avg-act td{
-  background:#10231f!important;
-  border-top:1px solid rgba(44,220,170,.34);
-  border-bottom:1px solid rgba(44,220,170,.20);
+  background:#102126!important;
+  border-top:1px solid rgba(45,212,191,.32);
+  border-bottom:1px solid rgba(45,212,191,.18);
   font-weight:700;color:#f2f7f4}
 tr.avg-act td:first-child{
-  color:#adffd5;font-size:12px;font-weight:800;
-  box-shadow:inset 4px 0 0 rgba(44,220,170,.92)}
+  color:#a8fff0;font-size:12px;font-weight:800;
+  box-shadow:inset 4px 0 0 rgba(45,212,191,.90)}
 html body table tbody tr.desc-row td{}
 tr.warmup-row td,tr.cooldown-row td{background:rgba(255,255,255,.015);color:#eaeaea}
 tr.warmup-row td:first-child,tr.cooldown-row td:first-child{color:#454a55;font-size:11px;font-weight:400;font-style:italic}
@@ -219,16 +219,16 @@ tr.phase-header td{
   border-bottom:.5px solid #1a1b22;border-top:.5px solid #1a1b22}
 tr.phase-header td:first-child{padding-left:4px}
 tr.step-summary td{
-  background:#101c15!important;
+  background:#101a1f!important;
   color:#f3f8ec!important;
   font-weight:700;
-  border-bottom:.5px solid rgba(166,235,32,.24);
-  border-top:.5px solid rgba(166,235,32,.18)}
-tr.step-summary td:first-child{box-shadow:inset 4px 0 0 rgba(188,255,32,.94)}
+  border-bottom:.5px solid rgba(115,180,130,.24);
+  border-top:.5px solid rgba(115,180,130,.16)}
+tr.step-summary td:first-child{box-shadow:inset 4px 0 0 rgba(126,217,87,.92)}
 tr.step-summary .main,tr.step-summary .group-label,tr.step-summary .group-dur{color:#f3f8ec!important}
 tr.step-summary .sub,tr.step-summary .elev{color:rgba(220,235,210,.62)!important}
-tr.step-summary .group-arrow{color:rgba(188,255,32,.85)!important}
-tr.step-summary:hover td{background:#14251a!important}
+tr.step-summary .group-arrow{color:rgba(126,217,87,.9)!important}
+tr.step-summary:hover td{background:#142229!important}
 .hide-btn{
   display:inline-flex;align-items:center;justify-content:center;
   width:16px;height:16px;border-radius:4px;
@@ -513,6 +513,14 @@ function dKmh(c,p){
   const d=parseFloat(((c>=0.3?c*3.6:0)-(p>=0.3?p*3.6:0)).toFixed(1));
   if(d===0||Math.abs(d)<0.1)return'';
   return`<div class="sub ${d>0?'dn':'dp'}">${d>0?'+':'-'}${Math.abs(d)}</div>`;
+}
+function dDist(c,p,isDesc){
+  c=parseFloat(c)||0;p=parseFloat(p)||0;
+  const d=parseFloat((c-p).toFixed(2));
+  if(d===0||Math.abs(d)<0.01)return'';
+  const cls=isDesc?'dg':(d>0?'dn':'dp');
+  const st=isDesc?' style="opacity:0.2"':'';
+  return'<div class="sub '+cls+'"'+st+'>'+(d>0?'+':'-')+Math.abs(d).toFixed(2)+' km</div>';
 }
 function dKmhRaw(c,p){
   const d=parseFloat(((c>=0.3?c*3.6:0)-(p>=0.3?p*3.6:0)).toFixed(1));
@@ -865,7 +873,7 @@ var allR=[];
       +(hideButton&&!esIntervalos?_hideBtn(ri):'')
       +'</div></div>';
 
-var hasRef=ref!==null;
+    var hasRef=!!ref;
     // For descanso: show delta only if main value exists AND we have a reference
     if(isDesc){
       var speedVal=s.speed||0;
@@ -884,13 +892,15 @@ var hasRef=ref!==null;
       var fcMedVal=s.fc_med>0?s.fc_med:'';
       var fcMaxVal=s.fc_max>0?s.fc_max:'';
       var distDisplay=distVal>=0?(distVal>0?distVal.toFixed(2)+' km':'0.00 km'):'';
-      var elevDisplay=distDisplay?elevHtml(s.desnivel, ref&&ref.desnivel):'';
-var rowClassDesc=isDesc?' desc-row':'';
+      var distDelta=hasRef&&distDisplay?dDist(distVal,ref.dist_km,true):'';
+      var elevDisplay=distDisplay?distDelta+elevHtml(s.desnivel):'';
+    var rowClassDesc=isDesc?' desc-row':'';
     var descStyle=isDesc?'style="color:#252830"':'';
+    var restTimeStyle=isDesc?' style="color:#252830"':'';
     var _extraCells=esIntervalos
       ?'<td class="col-lap" style="color:#6a7280;font-weight:700;font-size:11px">'+_vuelta+'</td>'
-        +'<td class="col-time"><div class="metric"><div class="main">'+secsToStepStr(_thisDur)+'</div></div></td>'
-        +'<td class="col-cum-time"><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+_cumDisplay+'</div></div></td>'
+        +'<td class="col-time"><div class="metric"><div class="main"'+restTimeStyle+'>'+secsToStepStr(_thisDur)+'</div></div></td>'
+        +'<td class="col-cum-time"><div class="metric"><div class="main" style="font-size:10px;color:'+(isDesc?'#252830':'#5a6070')+'">'+_cumDisplay+'</div></div></td>'
       :'';
     return '<tr id="'+rowId+'" class="'+(rowClass||'')+rowClassDesc+'">'
         +'<td>'+labelHtml+'</td>'
@@ -903,14 +913,14 @@ var rowClassDesc=isDesc?' desc-row':'';
         +'<td><div class="metric"><div class="main" '+descStyle+'>'+fcMaxVal+'</div>'+dFCxM+'</div></td>'
         +zonaCellHtml(s.zonas_lap)+'</tr>';
     } else {
-return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
+      return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
         +'<td>'+labelHtml+'</td>'
         +(esIntervalos
           ?'<td class="col-lap" style="color:#6a7280;font-weight:700;font-size:11px">'+_vuelta+'</td>'
             +'<td class="col-time"><div class="metric"><div class="main">'+secsToStepStr(_thisDur)+'</div></div></td>'
             +'<td class="col-cum-time"><div class="metric"><div class="main" style="font-size:10px;color:#5a6070">'+_cumDisplay+'</div></div></td>'
           :'')
-        +'<td><div class="metric"><div class="main">'+s.dist_km.toFixed(2)+' km</div>'+elevHtml(s.desnivel)+'</div></td>'
+        +'<td><div class="metric"><div class="main">'+s.dist_km.toFixed(2)+' km</div>'+(hasRef?dDist(s.dist_km,ref.dist_km,false):'')+elevHtml(s.desnivel)+'</div></td>'
         +'<td><div class="metric"><div class="main">'+toKmh(s.speed)+'</div>'+(hasRef?dKmh(s.speed,ref.speed):'')+'</div></td>'
         +_cadCell(s.cadencia,hasRef?ref.cadencia:0,false)
         +'<td><div class="metric"><div class="main">'+toRitmo(s.speed)+'</div>'+(hasRef?dRitmo(s.speed,ref.speed):'')+'</div></td>'
@@ -956,24 +966,31 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
     return a===b?String(a):a+' - '+b;
   }
 
-  function _summaryRow(s, rowClass, label, cumSecs, zonasForRow){
+  function _summaryRow(s, rowClass, label, cumSecs, zonasForRow, ref){
     var dur=s.dur_raw_secs||s.dur_secs||0;
     var gi=_rowIdx++;
     var gid=_actId+'g'+gi;
     var canToggle=/\b(group-header|phase-header)\b/.test(rowClass||'');
     var attrs=canToggle?' id="'+gid+'" onclick="_toggleGroup(\''+gid+'\')"':'';
     var firstCell=(canToggle?'<span class="group-arrow">▼</span>':'')+label;
+    var hasRef=!!ref;
+    var distDelta=hasRef?dDist(s.dist_km,ref.dist_km,false):'';
+    var dKmhH=hasRef?dKmh(s.speed,ref.speed):'';
+    var dCadH=hasRef&&s.cadencia&&ref.cadencia?_dCadRaw(s.cadencia,ref.cadencia):'';
+    var dRitmoH=hasRef?dRitmo(s.speed,ref.speed):'';
+    var dFCmH=hasRef?dFC(s.fc_med,ref.fc_med):'';
+    var dFCxH=hasRef?dFC(s.fc_max,ref.fc_max):'';
     return '<tr'+attrs+' class="'+rowClass+' step-summary">'
       +'<td>'+firstCell+'</td>'
       +'<td class="col-lap" style="font-weight:600">'+(s.vuelta||'')+'</td>'
       +'<td class="col-time"><div class="metric"><div class="main">'+(dur?secsToStr(dur):'—')+'</div></div></td>'
       +'<td class="col-cum-time"><div class="metric"><div class="main">'+(cumSecs?secsToStr(cumSecs):'—')+'</div></div></td>'
-      +'<td><div class="metric"><div class="main">'+s.dist_km.toFixed(2)+' km</div>'+elevHtml(s.desnivel)+'</div></td>'
-      +'<td><div class="metric"><div class="main">'+toKmh(s.speed)+'</div></div></td>'
-      +'<td><div class="metric"><div class="main">'+(s.cadencia||'—')+'</div></div></td>'
-      +'<td><div class="metric"><div class="main">'+toRitmo(s.speed)+'</div></div></td>'
-      +'<td><div class="metric"><div class="main">'+s.fc_med+'</div></div></td>'
-      +'<td><div class="metric"><div class="main">'+s.fc_max+'</div></div></td>'
+      +'<td><div class="metric"><div class="main">'+s.dist_km.toFixed(2)+' km</div>'+distDelta+elevHtml(s.desnivel)+'</div></td>'
+      +'<td><div class="metric"><div class="main">'+toKmh(s.speed)+'</div>'+dKmhH+'</div></td>'
+      +'<td><div class="metric"><div class="main">'+(s.cadencia||'—')+'</div>'+dCadH+'</div></td>'
+      +'<td><div class="metric"><div class="main">'+toRitmo(s.speed)+'</div>'+dRitmoH+'</div></td>'
+      +'<td><div class="metric"><div class="main">'+s.fc_med+'</div>'+dFCmH+'</div></td>'
+      +'<td><div class="metric"><div class="main">'+s.fc_max+'</div>'+dFCxH+'</div></td>'
       +zonaCellHtml(zonasForRow||s.zonas_lap)+'</tr>';
   }
 
@@ -1065,7 +1082,7 @@ return '<tr id="'+rowId+'" class="'+(rowClass||'')+(isDesc?' desc-row':'')+'">'
       var syn=_synthLap(g.activeLaps,'Carrera');
       syn.vuelta=_rangeFromRows(g.activeLaps);
       var zonaSyn=_synthLap(g.laps,'');
-      rows+=_summaryRow(syn,'group-header','Carrera',_cumTimeSecs+(syn.dur_raw_secs||syn.dur_secs||0),zonaSyn.zonas_lap);
+      rows+=_summaryRow(syn,'group-header','Carrera',_cumTimeSecs+(syn.dur_raw_secs||syn.dur_secs||0),zonaSyn.zonas_lap,lastGroupSyn);
 
       // Laps individuales
       g.laps.forEach(function(s){
