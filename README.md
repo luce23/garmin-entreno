@@ -112,3 +112,9 @@ Un único fichero `index.html` sin dependencias externas en servidor. Usa:
 - [html2canvas](https://html2canvas.hertzen.com) para la captura de imagen
 - LocalStorage para guardar la configuración de zonas y la URL de Drive
 - Google Apps Script (externo, opcional) para el upload a Drive
+
+---
+
+## Proyectos relacionados
+
+- [garmin-coach-mcp](https://github.com/luce23/garmin-coach-mcp) — Servidor MCP que conecta Garmin Connect con Claude y ChatGPT. Genera el JSON que esta web visualiza.
