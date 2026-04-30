@@ -64,6 +64,23 @@ body{background:#0b0c0f;color:#eaeaea;font-family:-apple-system,BlinkMacSystemFo
 .btn-filter-ok.green{border-color:#1e3a1e;color:#7eff7e}
 .btn-filter-ok.green:hover{background:#0e200e}
 
+/* ── MCP PANEL ── */
+.btn-mcp{background:#0d1520;border-color:#1a3050;color:#60a5fa;font-size:clamp(10px,2.5vw,12px);flex:1 1 30%;min-width:100px}
+.btn-mcp.connected{border-color:#1e4c42;color:#5eead4}
+.mcp-panel{margin-top:8px;background:#06070a;border:1px solid #1e2030;border-radius:10px;overflow:hidden}
+.mcp-panel-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #1e2030}
+.mcp-panel-title{font-size:11px;font-weight:700;color:#60a5fa;letter-spacing:.5px}
+.mcp-reset-btn{font-size:10px;color:#9aa0a6;cursor:pointer;padding:2px 6px;border-radius:4px;background:#141826;border:1px solid #2a3450}
+.mcp-reset-btn:hover{color:#e0e0e0}
+.mcp-list{max-height:200px;overflow-y:auto}
+.mcp-item{padding:9px 12px;font-size:12px;color:#cdd5e0;cursor:pointer;border-bottom:1px solid #0f1218;display:flex;justify-content:space-between;gap:8px;transition:background .12s}
+.mcp-item:hover{background:#0f1520}
+.mcp-item:last-child{border-bottom:none}
+.mcp-item-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mcp-item-meta{color:#60a5fa;font-size:11px;white-space:nowrap;flex-shrink:0}
+.mcp-status{padding:12px;font-size:12px;color:#9aa0a6;text-align:center}
+.mcp-status.error{color:#e74c3c}
+
 /* ── TEXTAREA ── */
 .json-wrap{position:relative}
 .json-area{
@@ -364,10 +381,20 @@ td:first-child:hover .hide-btn{opacity:1;color:#454a55}
       <button class="btn btn-render" onclick="render()">▶ Renderizar</button>
       <button class="btn btn-fit" onclick="document.getElementById('fit-input').click()">📁 Garmin</button>
       <input type="file" id="fit-input" accept=".fit,.zip" multiple style="display:none" onchange="loadFitOrZip(this)">
+      <button class="btn btn-mcp" id="btn-mcp" onclick="toggleMcpPanel()">⚡ MCP</button>
       <button class="btn btn-img" id="btn-img" onclick="saveImg()" style="display:none">Generar imagen</button>
       <button class="btn btn-copy-img" id="btn-copy-img" onclick="copyImg()" style="display:none">Copiar imagen</button>
       <button class="btn btn-link-img" id="btn-link-img" onclick="getImageLink()" style="display:none">Obtener link</button>
       <button class="btn btn-clear" onclick="clearJson()">✕</button>
+    </div>
+    <div class="mcp-panel" id="mcp-panel" style="display:none">
+      <div class="mcp-panel-header">
+        <span class="mcp-panel-title">⚡ SERVIDOR MCP</span>
+        <span class="mcp-reset-btn" onclick="resetMcpUrl()">Cambiar URL</span>
+      </div>
+      <div id="mcp-list" class="mcp-list">
+        <div class="mcp-status">Cargando actividades…</div>
+      </div>
     </div>
     <div class="action-row-filter" id="filter-bar">
       <input class="filter-input" id="filter-input" type="text" placeholder="Ocultar filas que contengan… ej: Descanso"
@@ -2010,6 +2037,78 @@ function saveImg(){
     }
     btn.textContent='Generar imagen';btn.disabled=false;
   });
+}
+
+/* ── MCP CONNECT ── */
+const MCP_URL_KEY='garminMcpUrl';
+
+function _getMcpUrl(){return (localStorage.getItem(MCP_URL_KEY)||'').replace(/\/$/,'');}
+
+function resetMcpUrl(){
+  localStorage.removeItem(MCP_URL_KEY);
+  document.getElementById('mcp-list').innerHTML='<div class="mcp-status">URL eliminada. Vuelve a conectar.</div>';
+  document.getElementById('btn-mcp').classList.remove('connected');
+}
+
+async function toggleMcpPanel(){
+  const panel=document.getElementById('mcp-panel');
+  if(panel.style.display!=='none'){panel.style.display='none';return;}
+  panel.style.display='block';
+  let url=_getMcpUrl();
+  if(!url){
+    url=(prompt('Introduce la URL de tu servidor MCP:')||'').trim().replace(/\/$/,'');
+    if(!url){panel.style.display='none';return;}
+    localStorage.setItem(MCP_URL_KEY,url);
+  }
+  await _loadMcpActivities();
+}
+
+async function _loadMcpActivities(){
+  const listEl=document.getElementById('mcp-list');
+  const url=_getMcpUrl();
+  if(!url){listEl.innerHTML='<div class="mcp-status error">URL no configurada</div>';return;}
+  listEl.innerHTML='<div class="mcp-status">Cargando actividades…</div>';
+  try{
+    const res=await fetch(`${url}/api/activities?limit=25`,{signal:AbortSignal.timeout(10000)});
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    const acts=data.activities||[];
+    if(!acts.length){listEl.innerHTML='<div class="mcp-status">Sin actividades recientes</div>';return;}
+    document.getElementById('btn-mcp').classList.add('connected');
+    listEl.innerHTML=acts.map(a=>{
+      const name=a.activityName||a.activityType?.typeKey||'Actividad';
+      const date=(a.startTimeLocal||'').slice(0,10);
+      const dist=a.distance?(a.distance/1000).toFixed(2)+' km':'';
+      return `<div class="mcp-item" onclick="loadMcpActivity('${a.activityId}',this)">
+        <span class="mcp-item-name">${date} · ${name}</span>
+        <span class="mcp-item-meta">${dist}</span>
+      </div>`;
+    }).join('');
+  }catch(e){
+    listEl.innerHTML=`<div class="mcp-status error">Error: ${e.message} — <span class="mcp-reset-btn" onclick="resetMcpUrl()">Cambiar URL</span></div>`;
+  }
+}
+
+async function loadMcpActivity(id,el){
+  const url=_getMcpUrl();
+  if(!url)return;
+  if(el){el.style.opacity='0.5';el.style.pointerEvents='none';}
+  try{
+    const res=await fetch(`${url}/api/tool/get_activity_splits`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({arguments:{activity_id:String(id)}}),
+      signal:AbortSignal.timeout(15000)
+    });
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    document.getElementById('json-input').value=JSON.stringify(data,null,2);
+    document.getElementById('mcp-panel').style.display='none';
+    render();
+  }catch(e){
+    if(el){el.style.opacity='1';el.style.pointerEvents='';}
+    alert('Error cargando actividad: '+e.message);
+  }
 }
 
 /* ── DRIVE LINK ── */
