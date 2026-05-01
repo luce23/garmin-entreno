@@ -3256,15 +3256,28 @@ function _refreshSavedUsersChips() {
   if (!keys.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'flex';
   wrap.innerHTML = keys.map(function(k) {
-    return '<button onclick="settingsLoadUser(\'' + k + '\')" '
-      + 'style="background:#101828;border:1px solid #1e2a40;border-radius:20px;padding:4px 12px;'
-      + 'font-size:11px;font-weight:600;color:#7aa2d4;cursor:pointer;white-space:nowrap">' + k + '</button>';
+    var kSafe = k.replace(/'/g, "\\'");
+    return '<span style="display:inline-flex;align-items:center;gap:0;background:#101828;border:1px solid #1e2a40;border-radius:20px;overflow:hidden">'
+      + '<button onclick="settingsLoadUser(\'' + kSafe + '\')" '
+      + 'style="background:none;border:none;padding:4px 10px 4px 12px;font-size:11px;font-weight:600;color:#7aa2d4;cursor:pointer;white-space:nowrap">' + k + '</button>'
+      + '<button onclick="settingsDeleteAlias(\'' + kSafe + '\')" title="Borrar alias" '
+      + 'style="background:none;border:none;border-left:1px solid #1e2a40;padding:4px 8px;font-size:10px;color:#4a3a3a;cursor:pointer;line-height:1" '
+      + 'onmouseover="this.style.color=\'#c06060\'" onmouseout="this.style.color=\'#4a3a3a\'">✕</button>'
+      + '</span>';
   }).join('');
 }
 
 function settingsLoadUser(username) {
   document.getElementById('cfg-username').value = username;
   settingsImportUser();
+}
+
+function settingsDeleteAlias(username) {
+  var aliases = _getAliases();
+  delete aliases[username];
+  localStorage.setItem(CONNECTOR_ALIASES_KEY, JSON.stringify(aliases));
+  _refreshSavedUsersChips();
+  _toast('Alias "' + username + '" borrado.', 'info');
 }
 
 function openSettings() {
@@ -3288,6 +3301,7 @@ function settingsImportUser() {
   if (!server) { _toast('Usuario "' + username + '" no encontrado. Introduce la URL manualmente.', 'info'); return; }
 
   document.getElementById('cfg-server').value = server;
+  document.getElementById('cfg-drive').value  = '';
   var btn = document.getElementById('cfg-import-btn');
   if (btn) { btn.textContent = '…'; btn.disabled = true; }
   _loadConfigFromServer(server).then(function(cfg) {
