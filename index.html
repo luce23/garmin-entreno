@@ -475,7 +475,7 @@ td:first-child:hover .hide-btn{opacity:1;color:#454a55}
 <div class="action-bar">
   <a href="https://connect.garmin.com/app/activities" target="_blank" class="action-btn ab-connect">
     <span class="action-btn-icon">🌐</span>
-    <span class="action-btn-label">Connect</span>
+    <span class="action-btn-label">Garmin Connect</span>
   </a>
   <div class="action-btn-split ab-zones-split">
     <button class="split-main" onclick="toggleHRZones()">
@@ -2764,7 +2764,13 @@ window.customHRZones = null;
 window.customHRZonesActive = false;
 
 function openHRZonesConfig() {
-  document.getElementById('hr-zones-content').style.display = 'block';
+  var content = document.getElementById('hr-zones-content');
+  if (content.style.display === 'none' || content.style.display === '') {
+    content.style.display = 'block';
+    toggleHRMethod();
+  } else {
+    content.style.display = 'none';
+  }
 }
 
 function toggleHRZones() {
