@@ -2324,9 +2324,11 @@ function _captureEl(callback, forDrive){
     setTimeout(()=>{
     const w=Math.max(wrapper.scrollWidth,clone.scrollWidth)+16;
     const h=wrapper.scrollHeight+16;
+    const MAX_PIXELS=30000000;
+    const effectiveScale=Math.min(scale,Math.max(1,Math.floor(Math.sqrt(MAX_PIXELS/(w*h)))));
     html2canvas(wrapper,{
       backgroundColor:'#0b0c0f',
-      scale:scale,
+      scale:effectiveScale,
       useCORS:true,
       logging:false,
       width:w,height:h,
@@ -2372,8 +2374,10 @@ function copyImg(){
     setTimeout(()=>{
     const w=Math.max(wrapper.scrollWidth,clone.scrollWidth)+16;
     const h=wrapper.scrollHeight+16;
+    const MAX_PIXELS=30000000;
+    const effectiveScale=Math.min(scale,Math.max(1,Math.floor(Math.sqrt(MAX_PIXELS/(w*h)))));
     html2canvas(wrapper,{
-      backgroundColor:'#0b0c0f',scale,useCORS:true,logging:false,
+      backgroundColor:'#0b0c0f',scale:effectiveScale,useCORS:true,logging:false,
       width:w,height:h,windowWidth:w,windowHeight:h,
       scrollX:0,scrollY:0,allowTaint:false,imageTimeout:0,letterRendering:true
     }).then(canvas=>{
