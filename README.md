@@ -105,11 +105,12 @@ El botón **📤 Drive → ⚙** configura tu usuario. Si ya está registrado se
 
 ## Configurar el Conector Garmin
 
-El botón **🔌 Conector → ⚙** te pide tu usuario. Si está en el mapa interno, detecta la URL del servidor automáticamente. Si no, introduce la URL manualmente.
+El botón **🔌 Conector → ⚙** te pide la URL de tu propio servidor Garmin MCP.
 
-- **Por defecto** apunta a `https://garmin-coach-mcp-production.up.railway.app` (servidor Railway, siempre activo)
-- Para usar el servidor local introduce `http://localhost:8000` como URL manual
+- Despliega [garmin-coach-mcp](https://github.com/Alejandrlucena/garmin-coach-mcp) en Railway y pega la URL que te dé (`https://tuservicio.up.railway.app`)
+- O arráncalo en local y usa `http://localhost:8000`
 - Las URLs con sufijo `/mcp` o `/sse` se limpian automáticamente
+- Sin URL configurada, el conector muestra un mensaje de ayuda en lugar de fallar en silencio
 
 ---
 
