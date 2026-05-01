@@ -1,6 +1,6 @@
 # Garmin Entreno · by AlejandrLucena
 
-Visualizador de entrenamientos de Garmin Connect. Carga un `.fit`/`.zip` o conéctate directamente al servidor MCP y obtén una tabla desglosada por vueltas, zonas de FC y grupos de intervalos — lista para compartir como imagen.
+Visualizador de entrenamientos de Garmin Connect. Carga un `.fit`/`.zip`, conéctate al servidor MCP o pega JSON — obtén una tabla desglosada por vueltas, zonas de FC y grupos de intervalos, lista para compartir como imagen.
 
 **Demo:** https://Alejandrlucena.github.io/garmin-entreno
 
@@ -9,12 +9,14 @@ Visualizador de entrenamientos de Garmin Connect. Carga un `.fit`/`.zip` o coné
 ## Cómo funciona
 
 ### Opción 1 — Archivo local
-Arrastra un `.fit` o `.zip` al recuadro, o usa el botón **📁 Garmin**.
+Arrastra un `.fit` o `.zip` al recuadro del editor, o usa el botón **📁 Garmin**.
 
-### Opción 2 — Conector directo (nuevo)
-1. Arranca el servidor [garmin-coach-mcp](https://github.com/Alejandrlucena/garmin-coach-mcp) localmente
-2. Abre `http://localhost:8000` en el navegador
-3. Pulsa **🔌 Conector** → elige actividad → se carga automáticamente, sin subir ningún archivo
+### Opción 2 — Conector directo
+Pulsa **🔌 Conector** → elige actividad → se carga automáticamente, sin subir ningún archivo.
+
+- Funciona desde **móvil y escritorio** — apunta por defecto al servidor Railway (siempre activo)
+- Si tienes el servidor corriendo localmente, configura el usuario en **⚙** para usar `localhost:8000`
+- Solo muestra actividades con datos de splits (carrera, ciclismo, natación…); fuerza, yoga, etc. se ocultan automáticamente
 
 ### Opción 3 — JSON manual
 Pega el JSON de una actividad que te haya dado Claude o ChatGPT y pulsa **▶ Renderizar**.
@@ -58,7 +60,7 @@ Los grupos de intervalos incluyen una fila de resumen con totales de tiempo, dis
 | 📤 Drive | Sube la vista actual a Drive y copia el link |
 | 🔌 Conector | Carga actividades desde el servidor Garmin MCP |
 
-Los botones **Drive** y **Conector** tienen zona de **⚙ Configurar** separada en la parte inferior para ajustar credenciales o URL sin interferir con la acción principal.
+Los botones **Drive** y **Conector** son botones partidos: la mitad superior lanza la acción y la mitad inferior **⚙ Configurar** abre los ajustes sin interferir.
 
 ---
 
@@ -89,7 +91,7 @@ Todas las imágenes incluyen la firma `by AlejandrLucena` en el pie.
 
 ## Configurar "Obtener link" (Google Drive)
 
-El botón **📤 Drive → ⚙ Configurar** configura tu usuario. Si ya está registrado se conecta automáticamente; si no, te pide la URL del Apps Script.
+El botón **📤 Drive → ⚙** configura tu usuario. Si ya está registrado se conecta automáticamente; si no, te pide la URL del Apps Script.
 
 ### Crear el Apps Script
 
@@ -103,9 +105,11 @@ El botón **📤 Drive → ⚙ Configurar** configura tu usuario. Si ya está re
 
 ## Configurar el Conector Garmin
 
-El botón **🔌 Conector → ⚙ Configurar** te pide tu usuario. Si está en el mapa interno, detecta la URL automáticamente. Si no, introduce la URL del servidor manualmente.
+El botón **🔌 Conector → ⚙** te pide tu usuario. Si está en el mapa interno, detecta la URL del servidor automáticamente. Si no, introduce la URL manualmente.
 
-Por defecto apunta a `http://localhost:8000`. Requiere tener [garmin-coach-mcp](https://github.com/Alejandrlucena/garmin-coach-mcp) corriendo.
+- **Por defecto** apunta a `https://garmin-coach-mcp-production.up.railway.app` (servidor Railway, siempre activo)
+- Para usar el servidor local introduce `http://localhost:8000` como URL manual
+- Las URLs con sufijo `/mcp` o `/sse` se limpian automáticamente
 
 ---
 
