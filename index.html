@@ -2112,10 +2112,8 @@ function saveImg(){
 const DRIVE_UPLOAD_URL_KEY='garminDriveUploadUrl';
 const DRIVE_USERNAME_KEY='garminDriveUsername';
 
-// Mapa usuario → URL del Apps Script
-const DRIVE_USER_PROFILES={
-  'alejandrlucena':'https://script.google.com/macros/s/AKfycbxZhpcdawOciPNkISsWoQyZqBuNcSXWBUexZIW0J0MpCup0uB7Z1-1DwFDDJ6YFQIs/exec',
-};
+// Mapa usuario → URL del Apps Script (cada usuario añade el suyo vía ⚙)
+const DRIVE_USER_PROFILES={};
 
 function _driveUrlForUsername(user){
   return DRIVE_USER_PROFILES[(user||'').trim().toLowerCase()]||null;
@@ -2966,9 +2964,8 @@ loadZones();
 const CONNECTOR_URL_KEY     = 'garminConnectorUrl';
 const CONNECTOR_USER_KEY    = 'garminConnectorUser';
 
-const CONNECTOR_USER_PROFILES = {
-  'alejandrlucena': 'https://garmin-coach-mcp-production.up.railway.app',
-};
+// Mapa usuario → URL del conector (cada usuario añade el suyo vía ⚙)
+const CONNECTOR_USER_PROFILES = {};
 
 function _connectorUrlForUser(user) {
   return CONNECTOR_USER_PROFILES[(user || '').trim().toLowerCase()] || null;
