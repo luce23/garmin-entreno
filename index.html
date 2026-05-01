@@ -2967,18 +2967,23 @@ const CONNECTOR_URL_KEY     = 'garminConnectorUrl';
 const CONNECTOR_USER_KEY    = 'garminConnectorUser';
 
 const CONNECTOR_USER_PROFILES = {
-  'alejandrlucena': 'http://localhost:8000',
+  'alejandrlucena': 'https://garmin-coach-mcp-production.up.railway.app',
 };
 
 function _connectorUrlForUser(user) {
   return CONNECTOR_USER_PROFILES[(user || '').trim().toLowerCase()] || null;
 }
 
+function _cleanConnectorUrl(raw) {
+  return (raw || '').trim().replace(/\/(mcp|sse)\/?$/, '').replace(/\/$/, '');
+}
+
 function _getConnectorUrl() {
   const user = localStorage.getItem(CONNECTOR_USER_KEY) || '';
   const known = _connectorUrlForUser(user);
   if (known) return known;
-  return localStorage.getItem(CONNECTOR_URL_KEY) || 'http://localhost:8000';
+  const stored = localStorage.getItem(CONNECTOR_URL_KEY) || '';
+  return _cleanConnectorUrl(stored) || 'https://garmin-coach-mcp-production.up.railway.app';
 }
 
 function configureConnector() {
@@ -2994,7 +2999,7 @@ function configureConnector() {
   localStorage.setItem(CONNECTOR_USER_KEY, cleanUser);
   if (!_connectorUrlForUser(cleanUser)) {
     const url = prompt('Usuario no reconocido. Pega la URL del conector:', localStorage.getItem(CONNECTOR_URL_KEY) || '');
-    if (url && url.trim()) localStorage.setItem(CONNECTOR_URL_KEY, url.trim().replace(/\/$/, ''));
+    if (url && url.trim()) localStorage.setItem(CONNECTOR_URL_KEY, _cleanConnectorUrl(url));
   }
 }
 
