@@ -3053,12 +3053,19 @@ function _cleanConnectorUrl(raw) {
 }
 
 function _getAliases() {
-  try { return JSON.parse(localStorage.getItem(CONNECTOR_ALIASES_KEY) || '{}'); } catch(e) { return {}; }
+  try {
+    var raw = JSON.parse(localStorage.getItem(CONNECTOR_ALIASES_KEY) || '{}');
+    // Migrate old format {user: "url"} → {user: {server:"url", drive:""}}
+    Object.keys(raw).forEach(function(k) {
+      if (typeof raw[k] === 'string') raw[k] = {server: raw[k], drive: ''};
+    });
+    return raw;
+  } catch(e) { return {}; }
 }
 
-function _saveAlias(username, serverUrl) {
+function _saveAlias(username, serverUrl, driveUrl) {
   var aliases = _getAliases();
-  aliases[username.trim().toLowerCase()] = serverUrl;
+  aliases[username.trim().toLowerCase()] = {server: serverUrl, drive: driveUrl || ''};
   localStorage.setItem(CONNECTOR_ALIASES_KEY, JSON.stringify(aliases));
 }
 
@@ -3297,23 +3304,12 @@ function settingsImportUser() {
   if (!username) { _toast('Escribe tu nombre de usuario primero', 'info'); return; }
 
   var aliases = _getAliases();
-  var server  = aliases[username];
-  if (!server) { _toast('Usuario "' + username + '" no encontrado. Introduce la URL manualmente.', 'info'); return; }
+  var alias   = aliases[username];
+  if (!alias) { _toast('Usuario "' + username + '" no encontrado. Introduce la URL manualmente.', 'info'); return; }
 
-  document.getElementById('cfg-server').value = server;
-  document.getElementById('cfg-drive').value  = '';
-  var btn = document.getElementById('cfg-import-btn');
-  if (btn) { btn.textContent = '…'; btn.disabled = true; }
-  _loadConfigFromServer(server).then(function(cfg) {
-    if (cfg.driveUrl) {
-      document.getElementById('cfg-drive').value = cfg.driveUrl;
-      _toast('✓ Configuración de "' + username + '" cargada.', 'ok');
-    } else {
-      _toast('Servidor cargado. Drive URL no configurado aún.', 'info');
-    }
-  }).finally(function() {
-    if (btn) { btn.textContent = 'Importar'; btn.disabled = false; }
-  });
+  document.getElementById('cfg-server').value = alias.server;
+  document.getElementById('cfg-drive').value  = alias.drive || '';
+  _toast('✓ Configuración de "' + username + '" cargada.', 'ok');
 }
 
 function closeSettings() {
@@ -3355,7 +3351,7 @@ function settingsSave() {
   if (server) {
     localStorage.setItem(CONNECTOR_URL_KEY, server);
     if (username) {
-      _saveAlias(username, server);
+      _saveAlias(username, server, drive);
       localStorage.setItem(CONNECTOR_USER_KEY, username);
     } else {
       localStorage.removeItem(CONNECTOR_USER_KEY);
