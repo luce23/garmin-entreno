@@ -2191,16 +2191,9 @@ function getImageLink(){
     .then(result=>{
       if(!result.ok&&!result.url)throw new Error(result.error||'El script no devolvió URL.');
       const url=result.url;
-      const finish=(copied)=>{
-        btn.textContent=copied?'✓ Copiado':'Obtener link';
-        btn.disabled=false;
-        if(!copied)prompt('Copia este link:',url);
-      };
-      if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(url).then(()=>finish(true)).catch(()=>finish(false));
-      } else {
-        finish(false);
-      }
+      btn.textContent='✓ Listo';
+      btn.disabled=false;
+      _showLinkToast(url);
     })
     .catch(err=>{
       btn.textContent=origText;
@@ -3132,6 +3125,71 @@ function _parseFitBufferConnector(buf, filename) {
     errEl.textContent = 'Error: ' + ex.message;
     errEl.style.display = 'block';
   }
+}
+
+// ── LINK TOAST ──
+function _showLinkToast(url) {
+  var existing = document.getElementById('link-toast');
+  if (existing) existing.remove();
+
+  var toast = document.createElement('div');
+  toast.id = 'link-toast';
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);'
+    + 'background:#1a1c24;border:1px solid #2a2d3a;border-radius:14px;'
+    + 'padding:12px 14px;display:flex;align-items:center;gap:10px;'
+    + 'box-shadow:0 4px 24px rgba(0,0,0,.6);z-index:2000;max-width:calc(100vw - 40px);'
+    + 'animation:fadeIn .2s ease';
+
+  var input = document.createElement('input');
+  input.readOnly = true;
+  input.value = url;
+  input.style.cssText = 'background:none;border:none;color:#8890a0;font-size:11px;'
+    + 'width:200px;max-width:55vw;outline:none;cursor:text';
+
+  var btn = document.createElement('button');
+  btn.textContent = 'Copiar';
+  btn.style.cssText = 'background:#2a3a5a;border:none;border-radius:8px;'
+    + 'color:#7aa2d4;font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;white-space:nowrap';
+
+  btn.addEventListener('click', function() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function() {
+        btn.textContent = '✓ Copiado';
+        btn.style.color = '#6dbf8a';
+        setTimeout(function() { toast.remove(); }, 1500);
+      }).catch(function() { _fallbackCopy(url, btn, toast); });
+    } else {
+      _fallbackCopy(url, btn, toast);
+    }
+  });
+
+  var close = document.createElement('button');
+  close.textContent = '✕';
+  close.style.cssText = 'background:none;border:none;color:#444;font-size:14px;cursor:pointer;padding:0 2px;line-height:1';
+  close.addEventListener('click', function() { toast.remove(); });
+
+  toast.appendChild(input);
+  toast.appendChild(btn);
+  toast.appendChild(close);
+  document.body.appendChild(toast);
+
+  setTimeout(function() { if (toast.parentNode) toast.remove(); }, 15000);
+}
+
+function _fallbackCopy(url, btn, toast) {
+  var ta = document.createElement('textarea');
+  ta.value = url;
+  ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try {
+    document.execCommand('copy');
+    if (btn) { btn.textContent = '✓ Copiado'; btn.style.color = '#6dbf8a'; }
+    setTimeout(function() { if (toast && toast.parentNode) toast.remove(); }, 1500);
+  } catch(e) {
+    if (btn) btn.textContent = 'Copiar';
+  }
+  ta.remove();
 }
 </script>
 </body>
