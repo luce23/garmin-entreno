@@ -2028,7 +2028,7 @@ function blobToDataUrl(blob){
 function openIOSave(canvas){
   let dataUrl='';
   try{dataUrl=canvas.toDataURL('image/jpeg',0.92);}catch(e){
-    alert('Imagen demasiado grande. Usa "Generar imagen" con menos actividades.');
+    _toast('Imagen demasiado grande. Usa "Generar imagen" con menos actividades.', 'error');
     return;
   }
   const win=window.open('','_blank');
@@ -2042,7 +2042,7 @@ function openIOSave(canvas){
       <img src="${dataUrl}"></body></html>`);
     win.document.close();
   } else {
-    alert('Permite las ventanas emergentes en Safari.');
+    _toast('Permite las ventanas emergentes en Safari.', 'error');
   }
 }
 function _prepareCaptureWrapper(wrapper, clone){
@@ -2080,7 +2080,7 @@ function saveImg(){
     if(isIOS()){
       let dataUrl='';
       try{dataUrl=canvas.toDataURL('image/jpeg',0.92);}catch(e){
-        alert('La imagen es demasiado grande para Safari. Prueba con menos actividades a la vez.');
+        _toast('Imagen demasiado grande para Safari. Prueba con menos actividades.', 'error');
         btn.textContent='Generar imagen';btn.disabled=false;return;
       }
       const win=window.open('','_blank');
@@ -2096,7 +2096,7 @@ function saveImg(){
           </body></html>`);
         win.document.close();
       } else {
-        alert('Permite las ventanas emergentes en Safari para guardar la imagen.');
+        _toast('Permite las ventanas emergentes en Safari para guardar la imagen.', 'error');
       }
     } else {
       const link=document.createElement('a');
@@ -2198,8 +2198,7 @@ function getImageLink(){
     .catch(err=>{
       btn.textContent=origText;
       btn.disabled=false;
-      alert('Error al subir:\n\n'+err.message
-        +'\n\nComprueba:\n• El script está desplegado como Web App\n• Ejecutar como: Tú\n• Acceso: Cualquier usuario');
+      _toast('Error al subir: ' + err.message, 'error');
     });
   }, true);
 }
@@ -2242,7 +2241,7 @@ function _captureEl(callback, forDrive){
       callback(canvas);
     }).catch(e=>{
       document.body.removeChild(wrapper);
-      alert('Error al capturar: '+e.message);
+      _toast('Error al capturar: ' + e.message, 'error');
     });
     });
   }));
@@ -2295,7 +2294,7 @@ function copyImg(){
       },'image/png');
     }).catch(e=>{
       document.body.removeChild(wrapper);
-      alert('Error: '+e.message);
+      _toast('Error: ' + e.message, 'error');
       btn.textContent='Copiar imagen';btn.disabled=false;
     });
     });
@@ -2846,14 +2845,14 @@ function applyHRZones() {
     }
     var lines = input.split('\n');
     if (lines.length !== 5) {
-      alert('Debe ingresar exactamente 5 líneas (una por zona).');
+      _toast('Debes ingresar exactamente 5 líneas (una por zona).', 'error');
       return;
     }
     var zones = [];
     for (var i = 0; i < 5; i++) {
       var parts = lines[i].split(',').map(function(p){ return parseFloat(p.trim()); });
       if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1]) || parts[0] >= parts[1]) {
-        alert('Línea ' + (i+1) + ': debe ser "min,max" con min < max (ej: 104,120).');
+        _toast('Línea ' + (i+1) + ': formato "min,max" con min < max (ej: 104,120).', 'error');
         return;
       }
       zones.push({min: parts[0], max: parts[1]});
@@ -2864,7 +2863,7 @@ function applyHRZones() {
   } else if (method === 'lactate') {
     var lactate = parseFloat(document.getElementById('hr-lactate-value').value);
     if (isNaN(lactate) || lactate <= 0) {
-      alert('Ingrese un valor válido para umbral de lactato.');
+      _toast('Ingresa un valor válido para umbral de lactato.', 'error');
       return;
     }
     var lowerPct = [0.58, 0.68, 0.80, 0.91, 1.02];
@@ -2881,7 +2880,7 @@ function applyHRZones() {
   } else if (method === 'maxhr') {
     var maxhr = parseFloat(document.getElementById('hr-maxhr-value').value);
     if (isNaN(maxhr) || maxhr <= 0) {
-      alert('Ingrese un valor válido para FC máxima.');
+      _toast('Ingresa un valor válido para FC máxima.', 'error');
       return;
     }
     var lowerPct = [0.50, 0.60, 0.70, 0.80, 0.90];
@@ -2899,7 +2898,7 @@ function applyHRZones() {
     var fcrMax = parseFloat(document.getElementById('hr-fcr-max').value);
     var fcrRest = parseFloat(document.getElementById('hr-fcr-rest').value);
     if (isNaN(fcrMax) || fcrMax <= 0 || isNaN(fcrRest) || fcrRest <= 0) {
-      alert('Ingrese valores válidos para FC máxima y FC en reposo.');
+      _toast('Ingresa valores válidos para FC máxima y FC en reposo.', 'error');
       return;
     }
     var fcrRange = fcrMax - fcrRest;
@@ -3127,7 +3126,23 @@ function _parseFitBufferConnector(buf, filename) {
   }
 }
 
-// ── LINK TOAST ──
+// ── TOASTS ──
+function _toast(msg, type) {
+  // type: 'info' | 'ok' | 'error'
+  var t = document.createElement('div');
+  var colors = { ok:'#2a4a35', error:'#4a1f1f', info:'#1a1c24' };
+  var borders = { ok:'#2d6b42', error:'#7a3030', info:'#2a2d3a' };
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);'
+    + 'background:' + (colors[type]||colors.info) + ';'
+    + 'border:1px solid ' + (borders[type]||borders.info) + ';'
+    + 'border-radius:12px;padding:11px 18px;font-size:13px;color:#d0d4de;'
+    + 'box-shadow:0 4px 24px rgba(0,0,0,.6);z-index:2000;max-width:calc(100vw - 40px);'
+    + 'text-align:center;animation:fadeIn .2s ease;pointer-events:none';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function() { if (t.parentNode) t.remove(); }, type === 'error' ? 5000 : 3000);
+}
+
 function _showLinkToast(url) {
   var existing = document.getElementById('link-toast');
   if (existing) existing.remove();
@@ -3136,60 +3151,81 @@ function _showLinkToast(url) {
   toast.id = 'link-toast';
   toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);'
     + 'background:#1a1c24;border:1px solid #2a2d3a;border-radius:14px;'
-    + 'padding:12px 14px;display:flex;align-items:center;gap:10px;'
+    + 'padding:11px 14px;display:flex;align-items:center;gap:10px;'
     + 'box-shadow:0 4px 24px rgba(0,0,0,.6);z-index:2000;max-width:calc(100vw - 40px);'
     + 'animation:fadeIn .2s ease';
+
+  var label = document.createElement('span');
+  label.style.cssText = 'font-size:12px;color:#6dbf8a;font-weight:600;white-space:nowrap';
 
   var input = document.createElement('input');
   input.readOnly = true;
   input.value = url;
   input.style.cssText = 'background:none;border:none;color:#8890a0;font-size:11px;'
-    + 'width:200px;max-width:55vw;outline:none;cursor:text';
+    + 'width:180px;max-width:45vw;outline:none;cursor:text';
 
   var btn = document.createElement('button');
-  btn.textContent = 'Copiar';
   btn.style.cssText = 'background:#2a3a5a;border:none;border-radius:8px;'
     + 'color:#7aa2d4;font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;white-space:nowrap';
-
-  btn.addEventListener('click', function() {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(function() {
-        btn.textContent = '✓ Copiado';
-        btn.style.color = '#6dbf8a';
-        setTimeout(function() { toast.remove(); }, 1500);
-      }).catch(function() { _fallbackCopy(url, btn, toast); });
-    } else {
-      _fallbackCopy(url, btn, toast);
-    }
-  });
 
   var close = document.createElement('button');
   close.textContent = '✕';
   close.style.cssText = 'background:none;border:none;color:#444;font-size:14px;cursor:pointer;padding:0 2px;line-height:1';
   close.addEventListener('click', function() { toast.remove(); });
 
+  function _setCopied() {
+    label.textContent = '✓ Copiado';
+    btn.style.display = 'none';
+    setTimeout(function() { if (toast.parentNode) toast.remove(); }, 2500);
+  }
+
+  function _tryClipboard() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(url).then(_setCopied).catch(_useExecCommand);
+    }
+    _useExecCommand();
+  }
+
+  function _useExecCommand() {
+    var ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); _setCopied(); } catch(e) { _showCopyBtn(); }
+    ta.remove();
+  }
+
+  function _showCopyBtn() {
+    label.textContent = '';
+    btn.textContent = 'Copiar';
+    btn.style.display = '';
+    btn.addEventListener('click', function() {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(_setCopied).catch(function() {
+          var ta2 = document.createElement('textarea');
+          ta2.value = url; ta2.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+          document.body.appendChild(ta2); ta2.focus(); ta2.select();
+          try { document.execCommand('copy'); _setCopied(); } catch(e) {}
+          ta2.remove();
+        });
+      }
+    });
+  }
+
+  // Start with copy button hidden; auto-attempt clipboard on mount
+  btn.style.display = 'none';
+  label.textContent = 'Copiando…';
+
+  toast.appendChild(label);
   toast.appendChild(input);
   toast.appendChild(btn);
   toast.appendChild(close);
   document.body.appendChild(toast);
 
-  setTimeout(function() { if (toast.parentNode) toast.remove(); }, 15000);
-}
-
-function _fallbackCopy(url, btn, toast) {
-  var ta = document.createElement('textarea');
-  ta.value = url;
-  ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
-  document.body.appendChild(ta);
-  ta.focus(); ta.select();
-  try {
-    document.execCommand('copy');
-    if (btn) { btn.textContent = '✓ Copiado'; btn.style.color = '#6dbf8a'; }
-    setTimeout(function() { if (toast && toast.parentNode) toast.remove(); }, 1500);
-  } catch(e) {
-    if (btn) btn.textContent = 'Copiar';
-  }
-  ta.remove();
+  // Small delay so iOS registers the element as mounted before clipboard call
+  setTimeout(_tryClipboard, 80);
+  setTimeout(function() { if (toast.parentNode) toast.remove(); }, 20000);
 }
 </script>
 </body>
