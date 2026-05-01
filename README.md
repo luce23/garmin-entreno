@@ -88,13 +88,11 @@ Flujo de uso:
 
 Una vez cargada la actividad, tres botones:
 
-- **Generar imagen** — descarga un PNG de alta resolución de la tabla completa
-- **Copiar imagen** — copia la imagen al portapapeles (para pegar en WhatsApp, Notas, etc.)
-- **Obtener link** (Drive) — sube la imagen a Google Drive y copia el link al portapapeles
+- **Generar imagen** — muestra una preview de la tabla con botón **Descargar** (PNG). Funciona en todos los navegadores y dispositivos, incluyendo iOS Safari.
+- **Copiar imagen** — copia la imagen directamente al portapapeles sin ningún popup (compatible con Safari y Chrome). Si el navegador no admite copia de imágenes, muestra un aviso para usar "Generar imagen".
+- **Obtener link** (Drive) — sube la imagen a Google Drive y copia el link al portapapeles.
 
 Todas las imágenes incluyen la firma `by AlejandrLucena` en el pie.
-
-El link se copia automáticamente al portapapeles al obtenerse. En iOS Safari, si la copia automática falla, aparece un botón **Copiar** en el toast de confirmación.
 
 ---
 
