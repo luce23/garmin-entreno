@@ -472,7 +472,7 @@ td:first-child:hover .hide-btn{opacity:1;color:#454a55}
       <span class="action-btn-icon">📤</span>
       <span class="action-btn-label">Drive</span>
     </button>
-    <button class="split-cfg" onclick="configureDriveUpload()">
+    <button class="split-cfg" onclick="openSettings()">
       <span class="split-cfg-icon">⚙</span>
       <span class="split-cfg-label">Configurar</span>
     </button>
@@ -482,7 +482,7 @@ td:first-child:hover .hide-btn{opacity:1;color:#454a55}
       <span class="action-btn-icon">🔌</span>
       <span class="action-btn-label">Conector</span>
     </button>
-    <button class="split-cfg" onclick="configureConnector()">
+    <button class="split-cfg" onclick="openSettings()">
       <span class="split-cfg-icon">⚙</span>
       <span class="split-cfg-label">Configurar</span>
     </button>
@@ -542,6 +542,47 @@ td:first-child:hover .hide-btn{opacity:1;color:#454a55}
       <button onclick="closeConnectorPanel()" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
     </div>
     <div id="connector-list" style="padding:4px 0;min-height:80px"></div>
+  </div>
+</div>
+
+<div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.80);z-index:1100;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px">
+  <div style="max-width:420px;margin:0 auto;background:#0f1014;border:1px solid #1e1f25;border-radius:14px;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #1e1f25">
+      <span style="font-size:13px;font-weight:700;color:#eaeaea">⚙ Configuración</span>
+      <button onclick="closeSettings()" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
+    </div>
+    <div style="padding:18px">
+
+      <div style="margin-bottom:18px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#505870;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Nombre de usuario</label>
+        <input id="cfg-username" type="text" placeholder="tu nombre de usuario" autocomplete="off" autocorrect="off" autocapitalize="off"
+          style="width:100%;box-sizing:border-box;background:#0c0d11;border:1px solid #1e2130;border-radius:8px;padding:9px 12px;font-size:13px;color:#d0d4de;outline:none">
+        <div style="font-size:10px;color:#353a50;margin-top:4px">Alias local — solo para no tener que escribir la URL cada vez</div>
+      </div>
+
+      <div style="margin-bottom:6px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#505870;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Servidor Garmin MCP</label>
+        <div style="display:flex;gap:6px">
+          <input id="cfg-server" type="url" placeholder="https://tu-servidor.up.railway.app" autocomplete="off"
+            style="flex:1;min-width:0;background:#0c0d11;border:1px solid #1e2130;border-radius:8px;padding:9px 12px;font-size:12px;color:#d0d4de;outline:none">
+          <button id="cfg-load-btn" onclick="settingsLoadFromServer()" style="background:#1a2035;border:1px solid #1e2130;border-radius:8px;padding:0 14px;font-size:11px;font-weight:700;color:#7aa2d4;cursor:pointer;white-space:nowrap">Cargar</button>
+        </div>
+        <div style="font-size:10px;color:#353a50;margin-top:4px">URL de tu instancia de <a href="https://github.com/Alejandrlucena/garmin-coach-mcp" target="_blank" style="color:#3a5a84">garmin-coach-mcp</a></div>
+      </div>
+
+      <div style="margin-bottom:22px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#505870;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;margin-top:18px">Google Drive (Apps Script)</label>
+        <input id="cfg-drive" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"
+          style="width:100%;box-sizing:border-box;background:#0c0d11;border:1px solid #1e2130;border-radius:8px;padding:9px 12px;font-size:12px;color:#d0d4de;outline:none">
+        <div style="font-size:10px;color:#353a50;margin-top:4px">URL del script para subir imágenes a Drive</div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button onclick="settingsSave()" style="flex:1;background:#1a3a2a;border:1px solid #2a5a3a;border-radius:10px;padding:11px;font-size:13px;font-weight:700;color:#6dbf8a;cursor:pointer">Guardar</button>
+        <button onclick="settingsClear()" style="background:#1a1215;border:1px solid #2a1a1a;border-radius:10px;padding:11px 16px;font-size:12px;font-weight:600;color:#7a3a3a;cursor:pointer">Borrar todo</button>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -2151,13 +2192,7 @@ function _ensureUploadUrl(){
   return url.trim();
 }
 
-function configureDriveUpload(){
-  const current=_resolveUploadUrl();
-  const url=prompt('URL de tu Google Apps Script\n(vacío para borrar configuración):', current);
-  if(url===null)return;
-  _saveDriveUrl(url.trim());
-  if(!url.trim()) _toast('Configuración de Drive borrada.','info');
-}
+function configureDriveUpload(){ openSettings(); }
 
 function getImageLink(){
   const btn=document.getElementById('btn-link-img');
@@ -2977,62 +3012,7 @@ function _applyServer(serverUrl) {
   });
 }
 
-function configureConnector() {
-  var currentUser = localStorage.getItem(CONNECTOR_USER_KEY) || '';
-  var currentUrl  = _getConnectorUrl();
-  var hint = currentUser || currentUrl || '';
-
-  var input = prompt(
-    'Usuario o URL del servidor Garmin MCP\n'
-    + '• Primera vez: pega la URL completa (https://…)\n'
-    + '• Veces siguientes: escribe tu nombre de usuario\n'
-    + '• Vacío para borrar configuración',
-    hint
-  );
-  if (input === null) return;
-  var val = input.trim();
-
-  if (!val) {
-    localStorage.removeItem(CONNECTOR_URL_KEY);
-    localStorage.removeItem(CONNECTOR_USER_KEY);
-    localStorage.removeItem(DRIVE_UPLOAD_URL_KEY);
-    _toast('Configuración borrada.', 'info');
-    return;
-  }
-
-  // ¿Es una URL?
-  if (val.startsWith('http://') || val.startsWith('https://')) {
-    var clean = _cleanConnectorUrl(val);
-    // Pedir alias para guardar (opcional)
-    var alias = prompt('¿Con qué nombre quieres guardar este servidor? (opcional, déjalo vacío para omitir):', currentUser || '');
-    if (alias && alias.trim()) {
-      var aliasClean = alias.trim().toLowerCase();
-      _saveAlias(aliasClean, clean);
-      localStorage.setItem(CONNECTOR_USER_KEY, aliasClean);
-    } else {
-      localStorage.removeItem(CONNECTOR_USER_KEY);
-    }
-    _applyServer(clean);
-    return;
-  }
-
-  // Es un nombre de usuario — buscar en aliases locales
-  var username = val.toLowerCase();
-  var aliases  = _getAliases();
-  if (aliases[username]) {
-    localStorage.setItem(CONNECTOR_USER_KEY, username);
-    _applyServer(aliases[username]);
-    return;
-  }
-
-  // Primera vez con ese nombre: pedir URL
-  var serverUrl = prompt('Primera vez con "' + val + '".\nPega la URL de tu servidor Garmin MCP:', '');
-  if (!serverUrl || !serverUrl.trim()) return;
-  var cleanUrl = _cleanConnectorUrl(serverUrl.trim());
-  _saveAlias(username, cleanUrl);
-  localStorage.setItem(CONNECTOR_USER_KEY, username);
-  _applyServer(cleanUrl);
-}
+function configureConnector() { openSettings(); }
 
 // Al cargar la página, refrescar config desde el servidor si está configurado
 (function() {
@@ -3178,6 +3158,77 @@ function _parseFitBufferConnector(buf, filename) {
     errEl.textContent = 'Error: ' + ex.message;
     errEl.style.display = 'block';
   }
+}
+
+// ── PANEL DE AJUSTES UNIFICADO ──
+function openSettings() {
+  var user   = localStorage.getItem(CONNECTOR_USER_KEY) || '';
+  var server = _getConnectorUrl();
+  var drive  = _resolveUploadUrl();
+  document.getElementById('cfg-username').value = user;
+  document.getElementById('cfg-server').value   = server;
+  document.getElementById('cfg-drive').value    = drive;
+  document.getElementById('settings-overlay').style.display = 'block';
+  // Si hay servidor pero no drive, intentar cargar automáticamente
+  if (server && !drive) settingsLoadFromServer(true);
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').style.display = 'none';
+}
+
+function settingsLoadFromServer(silent) {
+  var server = _cleanConnectorUrl(document.getElementById('cfg-server').value);
+  if (!server) { if (!silent) _toast('Introduce primero la URL del servidor.', 'error'); return; }
+  var btn = document.getElementById('cfg-load-btn');
+  btn.textContent = '…';
+  btn.disabled = true;
+  _loadConfigFromServer(server).then(function(cfg) {
+    if (cfg.driveUrl) {
+      document.getElementById('cfg-drive').value = cfg.driveUrl;
+      if (!silent) _toast('✓ Drive URL cargado desde el servidor.', 'ok');
+    } else {
+      if (!silent) _toast('El servidor no tiene Drive URL guardado aún.', 'info');
+    }
+  }).finally(function() {
+    btn.textContent = 'Cargar';
+    btn.disabled = false;
+  });
+}
+
+function settingsSave() {
+  var username = document.getElementById('cfg-username').value.trim().toLowerCase();
+  var server   = _cleanConnectorUrl(document.getElementById('cfg-server').value);
+  var drive    = document.getElementById('cfg-drive').value.trim();
+
+  if (server) {
+    localStorage.setItem(CONNECTOR_URL_KEY, server);
+    if (username) {
+      _saveAlias(username, server);
+      localStorage.setItem(CONNECTOR_USER_KEY, username);
+    } else {
+      localStorage.removeItem(CONNECTOR_USER_KEY);
+    }
+  } else {
+    localStorage.removeItem(CONNECTOR_URL_KEY);
+    localStorage.removeItem(CONNECTOR_USER_KEY);
+  }
+
+  _saveDriveUrl(drive);
+  closeSettings();
+  _toast('✓ Configuración guardada.', 'ok');
+}
+
+function settingsClear() {
+  if (!confirm('¿Borrar toda la configuración?')) return;
+  localStorage.removeItem(CONNECTOR_URL_KEY);
+  localStorage.removeItem(CONNECTOR_USER_KEY);
+  localStorage.removeItem(DRIVE_UPLOAD_URL_KEY);
+  document.getElementById('cfg-username').value = '';
+  document.getElementById('cfg-server').value   = '';
+  document.getElementById('cfg-drive').value    = '';
+  closeSettings();
+  _toast('Configuración borrada.', 'info');
 }
 
 // ── TOASTS ──
