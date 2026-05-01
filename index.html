@@ -2368,14 +2368,6 @@ function copyImg(){
 
   const scale=captureScale();
 
-  // Crear ClipboardItem con promesa ANTES del renderizado (mantiene el user gesture en Chrome 93+)
-  let resolveBlob, rejectBlob;
-  const blobPromise=new Promise((res,rej)=>{resolveBlob=res;rejectBlob=rej;});
-  let clipPromise=null;
-  if(typeof ClipboardItem!=='undefined'&&navigator.clipboard&&navigator.clipboard.write){
-    try{clipPromise=navigator.clipboard.write([new ClipboardItem({'image/png':blobPromise})]);}catch(e){clipPromise=null;}
-  }
-
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     setTimeout(()=>{
     const w=Math.max(wrapper.scrollWidth,clone.scrollWidth)+16;
@@ -2387,20 +2379,17 @@ function copyImg(){
     }).then(canvas=>{
       document.body.removeChild(wrapper);
       canvas.toBlob(blob=>{
-        if(!blob){rejectBlob(new Error('toBlob'));btn.textContent='Copiar imagen';btn.disabled=false;_toast('Error generando imagen','error');return;}
-        resolveBlob(blob);
+        if(!blob){btn.textContent='Copiar imagen';btn.disabled=false;_toast('Error generando imagen','error');return;}
         const ok=()=>{btn.textContent='✓ Copiada';setTimeout(()=>{btn.textContent='Copiar imagen';btn.disabled=false;},2500);};
         const fail=()=>{openIOSave(blob,btn);};
-        if(clipPromise){
-          clipPromise.then(ok).catch(fail);
+        if(navigator.clipboard&&navigator.clipboard.write&&typeof ClipboardItem!=='undefined'){
+          navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(ok).catch(fail);
         } else {
-          navigator.clipboard.write([new ClipboardItem({'image/png':blob})])
-            .then(ok).catch(fail);
+          fail();
         }
       },'image/png');
     }).catch(e=>{
       document.body.removeChild(wrapper);
-      rejectBlob(e);
       _toast('Error: '+e.message,'error');
       btn.textContent='Copiar imagen';btn.disabled=false;
     });
