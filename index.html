@@ -27,10 +27,11 @@ body{background:#0b0c0f;color:#eaeaea;font-family:-apple-system,BlinkMacSystemFo
 .editor-title{font-size:11px;font-weight:700;color:#9aa0a6;letter-spacing:1px;text-transform:uppercase}
 .editor-by{font-size:9px;color:#222;letter-spacing:.3px;margin-left:6px}
 .btn-clear-hdr{
-  background:none;border:none;color:#252530;font-size:15px;line-height:1;
-  cursor:pointer;padding:5px 7px;border-radius:7px;
-  transition:color .15s,background .15s;-webkit-appearance:none}
-.btn-clear-hdr:hover{color:#e74c3c;background:rgba(231,76,60,.1)}
+  background:#160c0c;border:1px solid #3a1a1a;color:#a04040;font-size:12px;font-weight:700;line-height:1;
+  cursor:pointer;padding:0 10px;min-height:28px;border-radius:9px;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:color .15s,background .15s,border-color .15s;-webkit-appearance:none}
+.btn-clear-hdr:hover{color:#e74c3c;background:#2a1010;border-color:#6a2020}
 .editor-actions{display:flex;gap:8px;flex-shrink:0}
 
 /* ── BUTTONS ── */
@@ -2198,6 +2199,10 @@ function saveImg(){
       link.download=captureFileBaseName()+'.png';
       link.href=canvas.toDataURL('image/png');
       link.click();
+      _toast('✓ Imagen descargando', 'ok');
+      btn.textContent='✓ Generada';
+      setTimeout(()=>{btn.textContent='Generar imagen';btn.disabled=false;},2000);
+      return;
     }
     btn.textContent='Generar imagen';btn.disabled=false;
   });
@@ -2384,7 +2389,7 @@ function copyImg(){
       document.body.removeChild(wrapper);
       canvas.toBlob(blob=>{
         if(!blob){btn.textContent='Copiar imagen';btn.disabled=false;_toast('Error generando imagen','error');return;}
-        const ok=()=>{btn.textContent='✓ Copiada';setTimeout(()=>{btn.textContent='Copiar imagen';btn.disabled=false;},2500);};
+        const ok=()=>{_toast('✓ Imagen copiada al portapapeles','ok');btn.textContent='✓ Copiada';setTimeout(()=>{btn.textContent='Copiar imagen';btn.disabled=false;},2500);};
         const fail=()=>{openIOSave(blob,btn);};
         if(navigator.clipboard&&navigator.clipboard.write&&typeof ClipboardItem!=='undefined'){
           navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(ok).catch(fail);
