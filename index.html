@@ -774,7 +774,7 @@ function dDescansoFC(c,p){
 }
 function _dCadRaw(c,p){
   var d=c-p; if(d===0||Math.abs(d)<0.1)return'';
-  return'<div class="sub '+(d>0?'dn':'dp')+'">'+(d>0?'+':'-')+Math.abs(d)+'</div>';
+  return'<div class="sub '+(d>0?'dp':'dn')+'">'+(d>0?'+':'-')+Math.abs(d)+'</div>';
 }
 function dRitmo(c,p){
   const diff=Math.round(ritmoSecs(c)-ritmoSecs(p));
