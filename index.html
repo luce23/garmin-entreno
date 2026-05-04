@@ -3139,16 +3139,53 @@ function _renderConnectorActs(acts) {
   }).join('');
 }
 
+var _connectorBroadActs = null;
+var _connectorBroadFetching = false;
+var _connectorSearchTimer = null;
+
+function _matchAct(a, q) {
+  var name = (a.activityName || '').toLowerCase();
+  var type = (_CONNECTOR_TIPOS[a.activityType] || a.activityType || '').toLowerCase();
+  var date = (a.startTimeLocal || '').slice(0, 10);
+  return name.includes(q) || type.includes(q) || date.includes(q);
+}
+
 function _filterConnectorActivities() {
   var q = (document.getElementById('connector-search').value || '').trim().toLowerCase();
   if (!q) { _renderConnectorActs(_connectorActs); return; }
-  var filtered = _connectorActs.filter(function(a) {
-    var name = (a.activityName || '').toLowerCase();
-    var type = (_CONNECTOR_TIPOS[a.activityType] || a.activityType || '').toLowerCase();
-    var date = (a.startTimeLocal || '').slice(0, 10);
-    return name.includes(q) || type.includes(q) || date.includes(q);
-  });
-  _renderConnectorActs(filtered);
+
+  // Filtra lo cargado al instante
+  var local = _connectorActs.filter(function(a) { return _matchAct(a, q); });
+  _renderConnectorActs(local);
+
+  // Con 3+ chars busca también en el histórico amplio (~500 actividades)
+  if (q.length < 3) return;
+  clearTimeout(_connectorSearchTimer);
+  _connectorSearchTimer = setTimeout(function() {
+    if (_connectorBroadActs) {
+      var broad = _connectorBroadActs.filter(function(a) { return _matchAct(a, q); });
+      if (broad.length > local.length) _renderConnectorActs(broad);
+      return;
+    }
+    if (_connectorBroadFetching) return;
+    _connectorBroadFetching = true;
+    var base = _getConnectorUrl();
+    if (!base) return;
+    fetch(base + '/activities?limit=500')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var SIN = {strength_training:1,yoga:1,pilates:1,flexibility:1,breathwork:1,meditation:1};
+        _connectorBroadActs = (data.activities || []).filter(function(a) { return !SIN[a.activityType]; });
+        _connectorBroadFetching = false;
+        var currentQ = (document.getElementById('connector-search').value || '').trim().toLowerCase();
+        if (currentQ.length >= 3) {
+          var broad = _connectorBroadActs.filter(function(a) { return _matchAct(a, currentQ); });
+          if (broad.length > (_connectorActs.filter(function(a){return _matchAct(a,currentQ);}).length))
+            _renderConnectorActs(broad);
+        }
+      })
+      .catch(function() { _connectorBroadFetching = false; });
+  }, 350);
 }
 
 function openConnectorPanel() {
@@ -3220,6 +3257,9 @@ function _loadConnectorByDate() {
 
 function closeConnectorPanel() {
   document.getElementById('connector-overlay').style.display = 'none';
+  _connectorBroadActs = null;
+  _connectorBroadFetching = false;
+  clearTimeout(_connectorSearchTimer);
 }
 
 function loadActivityFromConnector(activityId) {
