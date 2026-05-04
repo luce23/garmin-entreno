@@ -3171,7 +3171,7 @@ function _filterConnectorActivities() {
     _connectorBroadFetching = true;
     var base = _getConnectorUrl();
     if (!base) return;
-    fetch(base + '/activities?limit=500')
+    fetch(base + '/activities?limit=200')
       .then(function(r) { return r.json(); })
       .then(function(data) {
         var SIN = {strength_training:1,yoga:1,pilates:1,flexibility:1,breathwork:1,meditation:1};
@@ -3211,6 +3211,22 @@ function openConnectorPanel() {
   }
   if (dateWrap) dateWrap.style.display = 'flex';
   _loadConnectorByDate();
+  _prefetchConnectorBroad();
+}
+
+function _prefetchConnectorBroad() {
+  if (_connectorBroadActs || _connectorBroadFetching) return;
+  var base = _getConnectorUrl();
+  if (!base) return;
+  _connectorBroadFetching = true;
+  fetch(base + '/activities?limit=200')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var SIN = {strength_training:1,yoga:1,pilates:1,flexibility:1,breathwork:1,meditation:1};
+      _connectorBroadActs = (data.activities || []).filter(function(a) { return !SIN[a.activityType]; });
+      _connectorBroadFetching = false;
+    })
+    .catch(function() { _connectorBroadFetching = false; });
 }
 
 function _loadConnectorByDate() {
