@@ -3210,17 +3210,6 @@ function openConnectorPanel() {
     return;
   }
   if (dateWrap) dateWrap.style.display = 'flex';
-
-  // Pre-rellenar con los últimos 30 días si los campos están vacíos
-  var fromEl = document.getElementById('connector-date-from');
-  var toEl   = document.getElementById('connector-date-to');
-  if (fromEl && !fromEl.value) {
-    var today = new Date();
-    var ago30 = new Date(today); ago30.setDate(today.getDate() - 30);
-    toEl.value   = today.toISOString().slice(0, 10);
-    fromEl.value = ago30.toISOString().slice(0, 10);
-  }
-
   _loadConnectorByDate();
 }
 
@@ -3233,7 +3222,7 @@ function _loadConnectorByDate() {
   var searchWrap = document.getElementById('connector-search-wrap');
   searchWrap.style.display = 'none';
   list.innerHTML = '<div style="text-align:center;padding:28px;color:#555;font-size:12px">Cargando actividades…</div>';
-  var url = base + '/activities?limit=500';
+  var url = base + '/activities?limit=' + (from || to ? '500' : '30');
   if (from) url += '&start_date=' + from;
   if (to)   url += '&end_date=' + to;
   fetch(url)
