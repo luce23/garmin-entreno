@@ -559,6 +559,13 @@ td:first-child:hover .hide-btn{opacity:1;color:#454a55}
       <span style="font-size:13px;font-weight:700;color:#eaeaea">🔌 Actividades del conector</span>
       <button onclick="closeConnectorPanel()" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
     </div>
+    <div id="connector-date-wrap" style="padding:8px 12px;border-bottom:1px solid #111318;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <input id="connector-date-from" type="date" title="Desde"
+        style="flex:1;min-width:120px;background:#0c0d11;border:1px solid #1e2130;border-radius:8px;padding:6px 8px;font-size:12px;color:#d0d4de;outline:none;color-scheme:dark">
+      <input id="connector-date-to" type="date" title="Hasta"
+        style="flex:1;min-width:120px;background:#0c0d11;border:1px solid #1e2130;border-radius:8px;padding:6px 8px;font-size:12px;color:#d0d4de;outline:none;color-scheme:dark">
+      <button onclick="_loadConnectorByDate()" style="background:#1a3a28;border:1px solid #2a6040;border-radius:8px;padding:6px 12px;font-size:12px;color:#6fcf97;cursor:pointer;white-space:nowrap">Buscar</button>
+    </div>
     <div id="connector-search-wrap" style="display:none;padding:8px 12px;border-bottom:1px solid #111318">
       <input id="connector-search" type="search" placeholder="Buscar actividad…" oninput="_filterConnectorActivities()"
         style="width:100%;box-sizing:border-box;background:#0c0d11;border:1px solid #1e2130;border-radius:8px;padding:7px 10px;font-size:12px;color:#d0d4de;outline:none;-webkit-appearance:none">
@@ -3148,11 +3155,13 @@ function openConnectorPanel() {
   const overlay = document.getElementById('connector-overlay');
   const list = document.getElementById('connector-list');
   const searchWrap = document.getElementById('connector-search-wrap');
+  const dateWrap = document.getElementById('connector-date-wrap');
   overlay.style.display = 'block';
 
   const base = _getConnectorUrl();
   if (!base) {
     searchWrap.style.display = 'none';
+    if (dateWrap) dateWrap.style.display = 'none';
     list.innerHTML = '<div style="padding:20px 18px;font-size:12px;color:#8890a0;line-height:1.9">'
       + '<b style="color:#eaeaea;font-size:13px">Conector no configurado</b><br><br>'
       + 'Pulsa <b style="color:#ccc">⚙ Configurar</b> e introduce:<br>'
@@ -3163,6 +3172,7 @@ function openConnectorPanel() {
       + 'o en local (<code style="color:#666">http://localhost:8000</code>).</span></div>';
     return;
   }
+  if (dateWrap) dateWrap.style.display = 'flex';
   searchWrap.style.display = 'none';
   list.innerHTML = '<div style="text-align:center;padding:28px;color:#555;font-size:12px">Cargando actividades…</div>';
 
@@ -3189,6 +3199,37 @@ function openConnectorPanel() {
         + 'Error al conectar: ' + err.message + '<br><br>'
         + '<span style="color:#505870">¿Está el servidor corriendo en <b style="color:#777">' + base + '</b>?<br>'
         + 'Usa ⚙ para cambiar la URL del conector.</span></div>';
+    });
+}
+
+function _loadConnectorByDate() {
+  var from = document.getElementById('connector-date-from').value;
+  var to   = document.getElementById('connector-date-to').value;
+  var base = _getConnectorUrl();
+  if (!base) return;
+  var list = document.getElementById('connector-list');
+  var searchWrap = document.getElementById('connector-search-wrap');
+  searchWrap.style.display = 'none';
+  list.innerHTML = '<div style="text-align:center;padding:28px;color:#555;font-size:12px">Cargando actividades…</div>';
+  var url = base + '/activities?limit=500';
+  if (from) url += '&start_date=' + from;
+  if (to)   url += '&end_date=' + to;
+  fetch(url)
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) {
+      var SIN_SPLITS = {strength_training:1,yoga:1,pilates:1,flexibility:1,breathwork:1,meditation:1};
+      _connectorActs = (data.activities || []).filter(function(a) { return !SIN_SPLITS[a.activityType]; });
+      if (!_connectorActs.length) {
+        list.innerHTML = '<div style="text-align:center;padding:28px;color:#555;font-size:12px">No se encontraron actividades en ese rango</div>';
+        return;
+      }
+      var search = document.getElementById('connector-search');
+      if (search) search.value = '';
+      searchWrap.style.display = 'block';
+      _renderConnectorActs(_connectorActs);
+    })
+    .catch(function(err) {
+      list.innerHTML = '<div style="padding:16px 18px;color:#e74c3c;font-size:12px">Error: ' + err.message + '</div>';
     });
 }
 
