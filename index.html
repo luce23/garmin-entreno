@@ -3143,6 +3143,7 @@ function _renderConnectorActs(acts) {
 var _connectorBroadActs = null;
 var _connectorBroadFetching = false;
 var _connectorSearchTimer = null;
+var _connectorRecentReady = false; // true cuando _connectorActs viene del prefetch de arranque
 
 function _matchAct(a, q) {
   var name = (a.activityName || '').toLowerCase();
@@ -3215,6 +3216,22 @@ function openConnectorPanel() {
   _prefetchConnectorBroad();
 }
 
+function _connectorStartupPrefetch() {
+  var base = _getConnectorUrl();
+  if (!base) return;
+  var SIN = {strength_training:1,yoga:1,pilates:1,flexibility:1,breathwork:1,meditation:1};
+  // Prefetch recientes (30) → disponibles al abrir el panel
+  fetch(base + '/activities?limit=30')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      _connectorActs = (data.activities || []).filter(function(a) { return !SIN[a.activityType]; });
+      _connectorRecentReady = true;
+    })
+    .catch(function() {});
+  // Prefetch amplio (500) → disponible para búsqueda por texto
+  _prefetchConnectorBroad();
+}
+
 function _prefetchConnectorBroad() {
   if (_connectorBroadActs || _connectorBroadFetching) return;
   var base = _getConnectorUrl();
@@ -3237,6 +3254,14 @@ function _loadConnectorByDate() {
   if (!base) return;
   var list = document.getElementById('connector-list');
   var searchWrap = document.getElementById('connector-search-wrap');
+
+  // Si no hay filtro de fechas y el prefetch ya tiene datos → renderizar al instante
+  if (!from && !to && _connectorRecentReady && _connectorActs && _connectorActs.length) {
+    searchWrap.style.display = 'block';
+    _renderConnectorActs(_connectorActs);
+    return;
+  }
+
   searchWrap.style.display = 'none';
   list.innerHTML = '<div style="text-align:center;padding:28px;color:#555;font-size:12px">Cargando actividades…</div>';
   var url = base + '/activities?limit=' + (from || to ? '500' : '30');
@@ -3568,6 +3593,9 @@ function _showLinkToast(url) {
   setTimeout(_tryClipboard, 80);
   setTimeout(function() { if (toast.parentNode) toast.remove(); }, 20000);
 }
+
+// Prefetch en background al cargar la página (1.5s de retraso para no competir con el render)
+setTimeout(_connectorStartupPrefetch, 1500);
 </script>
 </body>
 </html>
