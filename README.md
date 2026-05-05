@@ -19,6 +19,7 @@ Pulsa **🔌 Conector → ⚙ Configurar** para introducir la URL de tu servidor
 - Solo muestra actividades con datos de splits (carrera, ciclismo, natación…); fuerza, yoga, etc. se ocultan automáticamente
 - Usa los campos **Desde / Hasta** para filtrar por rango de fechas y acceder a cualquier actividad histórica (2017, 2018…); sin fechas muestra las 30 más recientes
 - El buscador de texto filtra al instante sobre el rango visible; con 3+ letras amplía automáticamente la búsqueda a las últimas ~500 actividades en segundo plano
+- Al cargar la página descarga en background las actividades recientes y el historial amplio; si tardas unos segundos en abrir el panel, aparece al instante
 
 ### Opción 3 — JSON manual
 Pega el JSON de una actividad que te haya dado Claude o ChatGPT y pulsa **▶ Renderizar**.
