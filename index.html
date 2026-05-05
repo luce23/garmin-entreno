@@ -1214,6 +1214,7 @@ var allR=[];
     var dRitmoH=hasRef?dRitmo(s.speed,ref.speed):'';
     var dFCmH=hasRef?dFC(s.fc_med,ref.fc_med):'';
     var dFCxH=hasRef?dFC(s.fc_max,ref.fc_max):'';
+    var fcMaxSum=s.fc_max>0&&s.fc_max===maxFCxVal?'<span class="fc-max-pill">'+s.fc_max+'</span>':''+s.fc_max;
     return '<tr'+attrs+' class="'+rowClass+' step-summary">'
       +'<td>'+firstCell+'</td>'
       +'<td class="col-lap" style="font-weight:600">'+(s.vuelta||'')+'</td>'
@@ -1224,7 +1225,7 @@ var allR=[];
       +'<td><div class="metric"><div class="main">'+(s.cadencia||'—')+'</div>'+dCadH+'</div></td>'
       +'<td><div class="metric"><div class="main">'+toRitmo(s.speed)+'</div>'+dRitmoH+'</div></td>'
       +'<td><div class="metric"><div class="main">'+s.fc_med+'</div>'+dFCmH+'</div></td>'
-      +'<td><div class="metric"><div class="main">'+s.fc_max+'</div>'+dFCxH+'</div></td>'
+      +'<td><div class="metric"><div class="main">'+fcMaxSum+'</div>'+dFCxH+'</div></td>'
       +zonaCellHtml(zonasForRow||s.zonas_lap)+'</tr>';
   }
 
